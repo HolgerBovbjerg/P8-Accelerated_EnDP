@@ -18,18 +18,15 @@ def Naive_Mult(A, B):
         return print('Dimensions must match')
 
 
-# def FFT_mult(a, b):
-
 
 n = 4
-w = np.arange(n) + 1
-W = circulant(w)
-Block = np.tile(W, (n, n))
 
-a = np.random.rand(n)
-b = np.random.rand(n)
-c = np.random.rand(n)
-d = np.random.rand(n)
+a = np.random.randint(0, 255, n)
+b = np.random.randint(0, 255, n)
+c = np.random.randint(0, 255, n)
+d = np.random.randint(0, 255, n)
+
+
 data = np.vstack([a, b, c, d])
 
 A = circulant(a)
@@ -44,30 +41,24 @@ data_block = np.block([
     [D, C, B, A]
 ])
 
-# Q = np.random.rand(n*n)
-Q = np.arange(n * n) + 1
+Q = np.random.randint(0, 100, n*n)
 
 
-
-
-# test = np.array([344, 352, 344, 320, 344, 352, 344, 320, 344, 352, 344, 320, 344, 352, 344, 320])
 ts = np.zeros((n, n), dtype=np.complex_)
 ws = np.zeros((n, n), dtype=np.complex_)
 for i in range(n):
-    ts[i] = scfft.fft(np.transpose(data[i]))
+    ts[i] = scfft.fft(data[i])
     ws[i] = scfft.fft(Q.reshape((n, n))[i])
 
 out = np.zeros((n * n))
 for j in np.arange(n):
     x = 0
-    indices = np.arange(n)+j
-    wrap = ts.take(indices, mode='wrap')
+    shifted_ts = np.roll(ts, -j, 0)
     for i in range(n):
-        x = x + (wrap[i] * ws[i])
+        x = x + (shifted_ts[-i] * ws[i])
     out[(j * n):(j + 1) * n] = np.transpose(scfft.ifft(x))
     out = np.transpose(out)
 
-# out((j * n) - n + 1: (j * n)) = ifft(x)
 test = np.dot(data_block, Q)
-
-print(test-out)
+diff = test-out
+print(diff)
