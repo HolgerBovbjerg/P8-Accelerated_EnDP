@@ -18,6 +18,7 @@ def Naive_Mult(A, B):
     else:
         return print('Dimensions must match')
 
+
 def fft_mult(photo_matrix, vector):
     n = photo_matrix.shape[0]
     ts = np.zeros((n, n), dtype=np.complex_)
@@ -41,7 +42,6 @@ def fft_mult_vec(photo_matrix, vector):
     n = photo_matrix.shape[0]
     ts = scfft.fft(data, axis=1)
     ws = scfft.fft(vector.reshape((n, n)), axis=1)
-
     # t_temp = np.hstack([ts, np.roll(ts, 1, 0), np.roll(ts, 2, 0), np.roll(ts, 3, 0)])
 
     out = np.zeros((n * n))
@@ -71,6 +71,24 @@ def fft_mult_vec_2(photo_matrix, vector):
 
     return out
 
+
+def fft_mult_vec_3(photo_matrix, vector):
+    n = photo_matrix.shape[0]
+    ts = scfft.fft(data, axis=1)
+    ws = scfft.fft(vector.reshape((n, n)), axis=1)
+
+    out = np.zeros((n * n))
+    t_temp = np.vstack([
+        np.roll(np.flipud(np.roll(ts, -0, 0)), 1, 0),
+        np.roll(np.flipud(np.roll(ts, -1, 0)), 1, 0),
+        np.roll(np.flipud(np.roll(ts, -2, 0)), 1, 0),
+        np.roll(np.flipud(np.roll(ts, -3, 0)), 1, 0)
+    ]).reshape(n, n, n)
+    x = np.sum(t_temp * ws, 1)
+    out = np.real(scfft.ifft(x)).reshape(n**2)
+    return out
+
+
 ipython = get_ipython()
 n = 4
 
@@ -96,12 +114,9 @@ data_block = np.block([
 ])
 
 
-out = fft_mult_vec_2(data, Q)
-
-
-
+result = fft_mult_vec_3(data, Q)
 test = np.dot(data_block, Q)
-diff = test-out
+diff = test-result
 print(diff)
 
 # ipython.magic("timeit np.dot(data_block, Q)")
