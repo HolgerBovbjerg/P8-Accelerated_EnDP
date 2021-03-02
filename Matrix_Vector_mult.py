@@ -62,17 +62,46 @@ def fft_mult_vec_2(photo_matrix, vector):
 
     out = np.zeros((n * n))
     for j in np.arange(n):
-        x = 0
         x = np.sum(np.roll(np.flipud(np.roll(ts, -j, 0)), 1, 0) * ws, 0)
-        # shifted_ts = np.roll(ts, -j, 0)
-        # for i in range(n):
-        #     x = x + (shifted_ts[-i] * ws[i])
         out[(j * n):(j + 1) * n] = np.real(scfft.ifft(x))
 
     return out
 
 
 def fft_mult_vec_3(photo_matrix, vector):
+    n = photo_matrix.shape[0]
+    ts = scfft.fft(data, axis=1)
+    ws = scfft.fft(vector.reshape((n, n)), axis=1)
+
+    t_temp = np.vstack([
+        np.roll(np.flipud(np.roll(ts, -0, 0)), 1, 0),
+        np.roll(np.flipud(np.roll(ts, -1, 0)), 1, 0),
+        np.roll(np.flipud(np.roll(ts, -2, 0)), 1, 0),
+        np.roll(np.flipud(np.roll(ts, -3, 0)), 1, 0)
+    ]).reshape(n, n, n)
+    x = np.sum(t_temp * ws, 1)
+    out = np.real(scfft.ifft(x)).reshape(n**2)
+    return out
+
+
+def fft_mult_vec_4(photo_matrix, vector):
+    n = photo_matrix.shape[0]
+    ts = scfft.fft(data, axis=1)
+    ws = scfft.fft(vector.reshape((n, n)), axis=1)
+
+    t_temp = np.roll(np.flipud(np.roll(ts, -0, 0)), 1, 0)
+    for j in np.arange(3) + 1:
+        t_temp = np.vstack([
+            t_temp,
+            np.roll(np.flipud(np.roll(ts, -j, 0)), 1, 0)
+        ])
+
+    x = np.sum(t_temp.reshape(n, n, n) * ws, 1)
+    out = np.real(scfft.ifft(x)).reshape(n ** 2)
+    return out
+
+
+def fft_mult_vec_5(photo_matrix, vector):
     n = photo_matrix.shape[0]
     ts = scfft.fft(data, axis=1)
     ws = scfft.fft(vector.reshape((n, n)), axis=1)
@@ -84,9 +113,11 @@ def fft_mult_vec_3(photo_matrix, vector):
         np.roll(np.flipud(np.roll(ts, -2, 0)), 1, 0),
         np.roll(np.flipud(np.roll(ts, -3, 0)), 1, 0)
     ]).reshape(n, n, n)
-    x = np.sum(t_temp * ws, 1)
+    x = np.einsum('ij,kij->kj', ws, t_temp)
     out = np.real(scfft.ifft(x)).reshape(n**2)
     return out
+
+
 
 
 ipython = get_ipython()
@@ -101,10 +132,10 @@ d = np.random.randint(0, 255, n)
 data = np.vstack([a, b, c, d])  # photo + zeropadding
 Q = np.random.randint(0, 100, n*n)  # mean vector of weights
 
-A = circulant(a)
-B = circulant(b)
-C = circulant(c)
-D = circulant(d)
+A = circulant(data[0])
+B = circulant(data[1])
+C = circulant(data[2])
+D = circulant(data[3])
 
 data_block = np.block([
     [A, D, C, B],
@@ -114,13 +145,22 @@ data_block = np.block([
 ])
 
 
-result = fft_mult_vec_3(data, Q)
+result = fft_mult_vec_4(data, Q)
 test = np.dot(data_block, Q)
 diff = test-result
 print(diff)
 
 # ipython.magic("timeit np.dot(data_block, Q)")
-
-ipython.magic("timeit fft_mult_vec_2(data, Q)")
-ipython.magic("timeit fft_mult_vec(data, Q)")
-ipython.magic("timeit fft_mult(data, Q)")
+print('ref')
+ipython.magic("timeit -n 10000 -r 20 fft_mult(data, Q)")
+print('vec')
+ipython.magic("timeit -n 10000 -r 20 fft_mult_vec(data, Q)")
+print('vec2')
+ipython.magic("timeit -n 10000 -r 20 fft_mult_vec_2(data, Q)")
+print('vec3')
+ipython.magic("timeit -n 10000 -r 20 fft_mult_vec_3(data, Q)")
+print('vec4')
+ipython.magic("timeit -n 10000 -r 20 fft_mult_vec_4(data, Q)")
+print('vec5')
+ipython.magic("timeit -n 10000 -r 20 fft_mult_vec_5(data, Q)")
+# ipython.magic("timeit np.dot(data_block, Q)")
