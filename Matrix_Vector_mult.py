@@ -42,7 +42,6 @@ def fft_mult_vec(photo_matrix, vector):
     n = photo_matrix.shape[0]
     ts = scfft.fft(data, axis=1)
     ws = scfft.fft(vector.reshape((n, n)), axis=1)
-    # t_temp = np.hstack([ts, np.roll(ts, 1, 0), np.roll(ts, 2, 0), np.roll(ts, 3, 0)])
 
     out = np.zeros((n * n))
     for j in np.arange(n):
@@ -73,24 +72,8 @@ def fft_mult_vec_3(photo_matrix, vector):
     ts = scfft.fft(data, axis=1)
     ws = scfft.fft(vector.reshape((n, n)), axis=1)
 
-    t_temp = np.vstack([
-        np.roll(np.flipud(np.roll(ts, -0, 0)), 1, 0),
-        np.roll(np.flipud(np.roll(ts, -1, 0)), 1, 0),
-        np.roll(np.flipud(np.roll(ts, -2, 0)), 1, 0),
-        np.roll(np.flipud(np.roll(ts, -3, 0)), 1, 0)
-    ]).reshape(n, n, n)
-    x = np.sum(t_temp * ws, 1)
-    out = np.real(scfft.ifft(x)).reshape(n**2)
-    return out
-
-
-def fft_mult_vec_4(photo_matrix, vector):
-    n = photo_matrix.shape[0]
-    ts = scfft.fft(data, axis=1)
-    ws = scfft.fft(vector.reshape((n, n)), axis=1)
-
     t_temp = np.roll(np.flipud(np.roll(ts, -0, 0)), 1, 0)
-    for j in np.arange(3) + 1:
+    for j in np.arange(n-1) + 1:
         t_temp = np.vstack([
             t_temp,
             np.roll(np.flipud(np.roll(ts, -j, 0)), 1, 0)
@@ -101,27 +84,29 @@ def fft_mult_vec_4(photo_matrix, vector):
     return out
 
 
-def fft_mult_vec_5(photo_matrix, vector):
+def fft_mult_vec_4(photo_matrix, vector):
     n = photo_matrix.shape[0]
     ts = scfft.fft(data, axis=1)
     ws = scfft.fft(vector.reshape((n, n)), axis=1)
 
-    out = np.zeros((n * n))
-    t_temp = np.vstack([
-        np.roll(np.flipud(np.roll(ts, -0, 0)), 1, 0),
-        np.roll(np.flipud(np.roll(ts, -1, 0)), 1, 0),
-        np.roll(np.flipud(np.roll(ts, -2, 0)), 1, 0),
-        np.roll(np.flipud(np.roll(ts, -3, 0)), 1, 0)
-    ]).reshape(n, n, n)
-    x = np.einsum('ij,kij->kj', ws, t_temp)
-    out = np.real(scfft.ifft(x)).reshape(n**2)
+    t_temp = np.roll(np.flipud(np.roll(ts, -0, 0)), 1, 0)
+    for j in np.arange(n-1) + 1:
+        t_temp = np.vstack([
+            t_temp,
+            np.roll(np.flipud(np.roll(ts, -j, 0)), 1, 0)
+        ])
+
+    x = np.einsum('ij,kij->kj', ws, t_temp.reshape(n, n, n))
+    out = np.real(scfft.ifft(x)).reshape(n ** 2)
     return out
 
 
 
+# Lav det så hver circulant produkt regnes distribueret.
+
 
 ipython = get_ipython()
-n = 4
+n = 28
 
 a = np.random.randint(0, 255, n)
 b = np.random.randint(0, 255, n)
@@ -129,7 +114,8 @@ c = np.random.randint(0, 255, n)
 d = np.random.randint(0, 255, n)
 
 
-data = np.vstack([a, b, c, d])  # photo + zeropadding
+# data = np.vstack([a, b, c, d])  # photo + zeropadding
+data = np.random.randint(0, 255, (n, n))  # photo + zeropadding
 Q = np.random.randint(0, 100, n*n)  # mean vector of weights
 
 A = circulant(data[0])
@@ -145,12 +131,12 @@ data_block = np.block([
 ])
 
 
-result = fft_mult_vec_4(data, Q)
-test = np.dot(data_block, Q)
-diff = test-result
-print(diff)
+# result = fft_mult_vec_4(data, Q)
+# test = np.dot(data_block, Q)
+# diff = test-result
+# print(diff)
 
-# ipython.magic("timeit np.dot(data_block, Q)")
+
 print('ref')
 ipython.magic("timeit -n 10000 -r 20 fft_mult(data, Q)")
 print('vec')
@@ -161,6 +147,5 @@ print('vec3')
 ipython.magic("timeit -n 10000 -r 20 fft_mult_vec_3(data, Q)")
 print('vec4')
 ipython.magic("timeit -n 10000 -r 20 fft_mult_vec_4(data, Q)")
-print('vec5')
-ipython.magic("timeit -n 10000 -r 20 fft_mult_vec_5(data, Q)")
+
 # ipython.magic("timeit np.dot(data_block, Q)")
