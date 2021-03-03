@@ -7,7 +7,7 @@ Created on Tue Mar  2 11:13:22 2021
 
 
 import numpy as np
-from scipy.linalg import toeplitz
+from scipy.linalg import circulant
 from scipy import signal
 
 ipython = get_ipython()
@@ -34,21 +34,13 @@ def vectortomatrix(input, output_shape):
     # flip the output matrix up−down to get correct result 
     output=np.flipud(output)
     return output
-
-def conv_to_toeplitz(X,W):
-    # Dimensions of data and weights
-    X_rownum , Xc_olnum = X.shape
-    W_rownum , W_colnum = W.shape
-    
-    # output diemnsions
-    outputrownum = Irownum + Frownum - 1
-    outputcolnum = Icolnum + Fcolnum - 1
     
 
 # input  signal
-F = np.arange(28**2).reshape(28,28)
+# I = np.arange(28**2).reshape(28,28)
+I = np.random.rand(28,28)
 # filter
-I = np.array([[1,0,0], [0, 1, 0], [0,0,1]])
+F = np.array([[1,0,0], [0, 1, 0], [0,0,1]])
 
 # I = (np.arange(6)+1).reshape(2,3)
 # # filter
@@ -60,46 +52,54 @@ Irownum , Icolnum = I.shape
 Frownum , Fcolnum = F.shape
 
 # output diemnsions
-outputrownum = Irownum + Frownum - 1
-outputcolnum = Icolnum + Fcolnum - 1
+outputrownum = max(Irownum,Icolnum,Fcolnum,Frownum) + (Frownum-1)
+outputcolnum = outputrownum 
 
 # Needed padding
-row_padding = outputrownum - Frownum
-col_padding = outputcolnum - Fcolnum
+Frow_padding = outputrownum - Frownum
+Fcol_padding = outputcolnum - Fcolnum
 
 # Create zero padded input
-F_zero_padded =np.pad(F, ((row_padding , 0),
-                        (0, col_padding)),
+F_zero_padded =np.pad(F, ((Frow_padding , 0),
+                        (0, Fcol_padding)),
                         'constant', constant_values=0)
-# print('F_zero_padded\n',F_zero_padded)
+
+Irow_padding = outputrownum - Irownum
+Icol_padding = outputcolnum - Icolnum
+
+# Create zero padded filter
+I_zero_padded =np.pad(I, ((Irow_padding , 0),
+                        (0, Icol_padding)),
+                        'constant', constant_values=0)
+
+print('F_zero_padded\n',F_zero_padded)
+print('I_zero_padded\n',I_zero_padded)
 # list for storing individual toeplitz matrices
-toeplitz_list = []
+circulant_list = []
 
 # Creating toeplitz matrices
 for i in range(F_zero_padded.shape[0]-1,-1,-1):
     c = F_zero_padded[i,:]
     r = np.r_[c[0],np.zeros(Icolnum-1)]
-    toeplitz_m = toeplitz(c,r)
-    # toeplitz_m = circulant(c)
-    toeplitz_list.append(toeplitz_m)
-    # print('F'+str(2-i)+'\n',toeplitz_m)
+    circulant_m = circulant(c)
+    circulant_list.append(circulant_m)
+    print('F'+str(2-i)+'\n',circulant_m)
 
 # Indexes of toeplitz matrices in doubly block
 c = range(1,F_zero_padded.shape[0]+1)
-r = np.r_[c[0],np.zeros(Irownum-1,dtype=int)]
-doubly_ind = toeplitz(c,r)
-# print('doubly indices\n',doubly_ind)
+doubly_ind = circulant(c)
+print('doubly indices\n',doubly_ind)
 
 # Shape of individual toeplitz matrices
-toeplitz_shape = toeplitz_list[0].shape
+circulant_shape = circulant_list[0].shape
 
-height = toeplitz_shape[0]*doubly_ind.shape[0]
-width = toeplitz_shape[1]*doubly_ind.shape[1]
+height = circulant_shape[0]*doubly_ind.shape[0]
+width = circulant_shape[1]*doubly_ind.shape[1]
 
 # Shape of doubly block matrix
 doubly_blocked_shape = [height,width]
 doubly_blocked = np.zeros(doubly_blocked_shape)
-b_height, b_width = toeplitz_shape
+b_height, b_width = circulant_shape
 
 # Generate doubly block
 for i in range(doubly_ind.shape[0]):
@@ -108,14 +108,14 @@ for i in range(doubly_ind.shape[0]):
         start_j = j *b_width
         end_i = start_i + b_height
         end_j = start_j + b_width
-        doubly_blocked[start_i:end_i,start_j:end_j] = toeplitz_list[doubly_ind[i,j]-1]
+        doubly_blocked[start_i:end_i,start_j:end_j] = circulant_list[doubly_ind[i,j]-1]
         
-# print('Doubly blocked \n',doubly_blocked)
+print('Doubly blocked \n',doubly_blocked)
 
 conv_direct =  signal.convolve2d(I,F)
 
-vectorizedI = matrixtovector(I)
-# print('Vectorized input',vectorizedI)
+vectorizedI = matrixtovector(I_zero_padded)
+print('Vectorized input',vectorizedI)
 
 conv_matmul = np.matmul(doubly_blocked, vectorizedI)
 outshape = (outputrownum,outputcolnum)
@@ -125,7 +125,7 @@ conv_matmul_matrix = vectortomatrix(conv_matmul,outshape)
 # print('Mul convolution\n',conv_matmul)
 # print('Matrix mul convolution\n',conv_matmul_matrix)
 difference = np.max(conv_matmul_matrix - conv_direct)
-print('difference',difference)
+print('Max difference',difference)
 
 print('Direct convolution')
 ipython.magic("timeit signal.convolve2d(I,F)")
