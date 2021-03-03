@@ -35,15 +35,6 @@ def vectortomatrix(input, output_shape):
     output=np.flipud(output)
     return output
 
-def conv_to_toeplitz(X,W):
-    # Dimensions of data and weights
-    X_rownum , Xc_olnum = X.shape
-    W_rownum , W_colnum = W.shape
-    
-    # output diemnsions
-    outputrownum = Irownum + Frownum - 1
-    outputcolnum = Icolnum + Fcolnum - 1
-    
 
 # input  signal
 F = np.arange(28**2).reshape(28,28)
