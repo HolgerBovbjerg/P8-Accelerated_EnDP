@@ -20,6 +20,15 @@ def Naive_Mult(A, B):
 
 
 def fft_mult(photo_matrix, vector):
+    '''
+    This is the naive implementation of multiplication of circulant matrix with a vector, using the FFT.
+    Each row of the photo and corresponding slice of the vector are FFT'ed in a for-loop
+    Likewise the output is calculated piecewise in a double for-loop.
+
+    :param photo_matrix: The nxn-shaped zeropadded input photo
+    :param vector: The mean-vector of the kernel
+    :return: The resulting mean-vector from the matrix-vector multiplication.
+    '''
     n = photo_matrix.shape[0]
     ts = np.zeros((n, n), dtype=np.complex_)
     ws = np.zeros((n, n), dtype=np.complex_)
@@ -39,6 +48,15 @@ def fft_mult(photo_matrix, vector):
 
 
 def fft_mult_vec(photo_matrix, vector):
+    '''
+    This is the first step of vectorizing the FFT multiplication algorithm.
+    Here the entire photo_matrix and the vector are FFT'ed in one go.
+    The output is still calculated with a double for-loop.
+
+    :param photo_matrix: The nxn-shaped zeropadded input photo
+    :param vector: The mean-vector of the kernel
+    :return: The resulting mean-vector from the matrix-vector multiplication.
+    '''
     n = photo_matrix.shape[0]
     ts = scfft.fft(photo_matrix, axis=1)
     ws = scfft.fft(vector.reshape((n, n)), axis=1)
@@ -55,6 +73,14 @@ def fft_mult_vec(photo_matrix, vector):
 
 
 def fft_mult_vec_2(photo_matrix, vector):
+    '''
+    This is the next step in vectorizing the FFT-multiplication algorithm.
+    Here the the output is calculated in a single for-loop, with a multiplication with ws in each iteration.
+
+    :param photo_matrix: The nxn-shaped zeropadded input photo
+    :param vector: The mean-vector of the kernel
+    :return: The resulting mean-vector from the matrix-vector multiplication.
+    '''
     n = photo_matrix.shape[0]
     ts = scfft.fft(photo_matrix, axis=1)
     ws = scfft.fft(vector.reshape((n, n)), axis=1)
@@ -68,6 +94,14 @@ def fft_mult_vec_2(photo_matrix, vector):
 
 
 def fft_mult_vec_3(photo_matrix, vector):
+    '''
+    This is the third step in the vectorization of the FFT-multiplication algorithm
+    Here the multiplication with ws is moved outside the for-loop and done only once.
+
+    :param photo_matrix: The nxn-shaped zeropadded input photo
+    :param vector: The mean-vector of the kernel
+    :return: The resulting mean-vector from the matrix-vector multiplication.
+    '''
     n = photo_matrix.shape[0]
     ts = scfft.fft(photo_matrix, axis=1)
     ws = scfft.fft(vector.reshape((n, n)), axis=1)
@@ -82,6 +116,12 @@ def fft_mult_vec_3(photo_matrix, vector):
 
 
 def fft_mult_vec_4(photo_matrix, vector):
+    '''
+
+    :param photo_matrix: The nxn-shaped zeropadded input photo
+    :param vector: The mean-vector of the kernel
+    :return: The resulting mean-vector from the matrix-vector multiplication.
+    '''
     n = photo_matrix.shape[0]
     ts = scfft.fft(photo_matrix, axis=1)
     ws = scfft.fft(vector.reshape((n, n)), axis=1)
