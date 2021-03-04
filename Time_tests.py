@@ -3,20 +3,22 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 
-repetitions = 3000
-sizes = np.arange(10, 50)
+repetitions = 1000
+sizes = np.arange(10, 170)
 
 ref_times = np.empty(sizes.shape)
 vec_times = np.empty(sizes.shape)
 vec2_times = np.empty(sizes.shape)
 vec3_times = np.empty(sizes.shape)
 vec4_times = np.empty(sizes.shape)
+# matmul_times = np.empty(sizes.shape)
 
 j = 0
 for n in sizes:
     print(n)
     data = np.random.randint(0, 255, (n, n))  # photo + zeropadding
     vector = np.random.randint(0, 100, n * n)  # mean vector of weights
+    # block = np.random.randint(0, 255, (n**2, n**2))
 
     start = time.time()
     for i in range(repetitions):
@@ -50,9 +52,16 @@ for n in sizes:
 
     vec4_times[j] = (time.time()-start)/repetitions
 
+    # start = time.time()
+    # for i in range(repetitions):
+    #     temp = np.matmul(block, vector)
+    #
+    # matmul_times[j] = (time.time()-start)/repetitions
+
     j += 1
 
 
+# plt.plot(sizes, matmul_times, label='Matmul')
 plt.plot(sizes, ref_times, label='Ref')
 plt.plot(sizes, vec_times, label='Vec')
 plt.plot(sizes, vec2_times, label='Vec_2')
@@ -65,6 +74,7 @@ plt.show()
 
 
 plt.plot(sizes, ref_times/ref_times, label='Ref')
+# plt.plot(sizes, matmul_times/ref_times, label='Matmul')
 plt.plot(sizes, vec_times/ref_times, label='Vec')
 plt.plot(sizes, vec2_times/ref_times, label='Vec_2')
 plt.plot(sizes, vec3_times/ref_times, label='Vec_3')
