@@ -136,7 +136,7 @@ def fft_mult_vec_4(photo_matrix, vector):
 
 
 
-# # Lav det så hver circulant produkt regnes distribueret.
+# TODO: Lav det så hver circulant produkt regnes distribueret.
 #
 #
 # ipython = get_ipython()

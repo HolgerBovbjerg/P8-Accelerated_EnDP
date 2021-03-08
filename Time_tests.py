@@ -3,8 +3,8 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 
-repetitions = 1000
-sizes = np.arange(10, 170)
+repetitions = 100
+sizes = np.arange(10, 50)
 
 ref_times = np.empty(sizes.shape)
 vec_times = np.empty(sizes.shape)
