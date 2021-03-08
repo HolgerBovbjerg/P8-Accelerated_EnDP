@@ -2,6 +2,7 @@ import numpy as np
 from scipy.linalg import circulant
 import scipy.fft as scfft
 
+
 from IPython import get_ipython
 
 def Naive_Mult(A, B):
@@ -30,13 +31,13 @@ def fft_mult(photo_matrix, vector):
     :return: The resulting mean-vector from the matrix-vector multiplication.
     '''
     n = photo_matrix.shape[0]
-    ts = np.zeros((n, n), dtype=np.complex_)
-    ws = np.zeros((n, n), dtype=np.complex_)
+    ts = np.empty((n, n), dtype=np.complex_)
+    ws = np.empty((n, n), dtype=np.complex_)
     for i in range(n):
         ts[i] = scfft.fft(photo_matrix[i])  # Lav row-wise fft hvis muligt
         ws[i] = scfft.fft(vector.reshape((n, n))[i])  # Pre-calculate q.reshape
 
-    out = np.zeros((n * n))
+    out = np.empty((n * n))
     for j in np.arange(n):
         x = 0
         shifted_ts = np.roll(ts, -j, 0)
@@ -61,7 +62,7 @@ def fft_mult_vec(photo_matrix, vector):
     ts = scfft.fft(photo_matrix, axis=1)
     ws = scfft.fft(vector.reshape((n, n)), axis=1)
 
-    out = np.zeros((n * n))
+    out = np.empty((n * n))
     for j in np.arange(n):
         x = 0
         shifted_ts = np.roll(ts, -j, 0)
@@ -77,6 +78,8 @@ def fft_mult_vec_2(photo_matrix, vector):
     This is the next step in vectorizing the FFT-multiplication algorithm.
     Here the the output is calculated in a single for-loop, with a multiplication with ws in each iteration.
 
+    TODO: Se om det giver bedre performance at bruge einsum fremfor np.sum. Måske lav det conditioned på størrelse af n
+
     :param photo_matrix: The nxn-shaped zeropadded input photo
     :param vector: The mean-vector of the kernel
     :return: The resulting mean-vector from the matrix-vector multiplication.
@@ -85,7 +88,7 @@ def fft_mult_vec_2(photo_matrix, vector):
     ts = scfft.fft(photo_matrix, axis=1)
     ws = scfft.fft(vector.reshape((n, n)), axis=1)
 
-    out = np.zeros((n * n))
+    out = np.empty((n * n))
     for j in np.arange(n):
         x = np.sum(np.roll(np.flipud(np.roll(ts, -j, 0)), 1, 0) * ws, 0)
         out[(j * n):(j + 1) * n] = np.real(scfft.ifft(x))
@@ -106,7 +109,7 @@ def fft_mult_vec_3(photo_matrix, vector):
     ts = scfft.fft(photo_matrix, axis=1)
     ws = scfft.fft(vector.reshape((n, n)), axis=1)
 
-    t_temp = np.zeros((n*n, n), dtype=complex)
+    t_temp = np.empty((n*n, n), dtype=complex)
     for j in np.arange(n):
         t_temp[j*n:(j+1)*n] = np.roll(np.flipud(np.roll(ts, -j, 0)), 1, 0)
 
@@ -126,7 +129,7 @@ def fft_mult_vec_4(photo_matrix, vector):
     ts = scfft.fft(photo_matrix, axis=1)
     ws = scfft.fft(vector.reshape((n, n)), axis=1)
 
-    t_temp = np.zeros((n*n, n), dtype=complex)
+    t_temp = np.empty((n*n, n), dtype=complex)
     for j in np.arange(n):
         t_temp[j*n:(j+1)*n] = np.roll(np.flipud(np.roll(ts, -j, 0)), 1, 0)
 
