@@ -7,7 +7,7 @@ from torchvision import datasets, transforms
 
 transform = transforms.ToTensor()
 
-dataset = datasets.ImageFolder('/Code/Uni/P8-Accelerated_EnDP/Resized_images/', transform=transform)
+dataset = datasets.ImageFolder('Resized_images', transform=transform)
 
 im1 = dataset[1][0]
 print(f'size of image {im1.size()}')
@@ -61,7 +61,7 @@ im1_unf = unfold(im1)
 
 # -----------------------------------------------
 # We do this smart
-out_unf = torch.matmul(sobel_right, im1_unf)
+out_unf = torch.matmul(sobel_top, im1_unf)
 out_duo_unf = torch.matmul(duo, im1_unf)
 out_rand_unf = torch.matmul(randfilt, im1_unf)
 # -----------------------------------------------
