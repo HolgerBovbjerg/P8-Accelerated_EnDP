@@ -4,7 +4,7 @@ import scipy.fft as scfft
 import scipy.signal as ss
 
 
-from IPython import get_ipython
+# from IPython import get_ipython
 
 def Naive_Mult(A, B):
     # dimension check
@@ -161,33 +161,33 @@ def fft_mult_vec_4(photo_matrix, vector):
 #     [D, C, B, A]
 # ])
 #
-data = np.array([
-    [1, 2, 3, 0],
-    [4, 5, 6, 0],
-    [7, 8, 9, 0],
-    [0, 0, 0, 0]
-])
+# data = np.array([
+#     [1, 2, 3, 0],
+#     [4, 5, 6, 0],
+#     [7, 8, 9, 0],
+#     [0, 0, 0, 0]
+# ])
 
-data3 = np.array([
-    [1, 2, 3],
-    [4, 5, 6],
-    [7, 8, 9],
-])
-Q = np.array([7,5,0,0, 3,1,0,0, 0,0,0,0, 0,0,0,0])
+# data3 = np.array([
+#     [1, 2, 3],
+#     [4, 5, 6],
+#     [7, 8, 9],
+# ])
+# Q = np.array([7,5,0,0, 3,1,0,0, 0,0,0,0, 0,0,0,0])
 
-Q3 = np.array([
-    [7, 5],
-    [3, 1]
-])
-#
-result = scfft.ifft2(scfft.fft2(data3,(4, 4)) * scfft.fft2(Q3, (4, 4)))
-print(result)
+# Q3 = np.array([
+#     [7, 5],
+#     [3, 1]
+# ])
+# #
+# result = scfft.ifft2(scfft.fft2(data3,(4, 4)) * scfft.fft2(Q3, (4, 4)))
+# print(result)
 
-result = fft_mult_vec_3(data, Q)
-print(result.reshape((4,4)))
+# result = fft_mult_vec_3(data, Q)
+# print(result.reshape((4,4)))
 
-result = ss.convolve2d(data3, Q3)
-print(result)
+# result = ss.convolve2d(data3, Q3)
+# print(result)
 
 
 # test = np.dot(data_block, Q)
