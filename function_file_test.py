@@ -23,8 +23,9 @@ sobel_left = np.array([
 
 W_vec = ff.filt2vec(sobel_left, 3)
 
-# out = np.matmul(im1, W_vec[0])
+out = np.matmul(W_vec, convmatrix)
 
+out_image = ff.convout2image(out, (224, 224))
 
-# plt.imshow(out, cmap='gray')
-# plt.show()
+plt.imshow(out_image, cmap='gray')
+plt.show()

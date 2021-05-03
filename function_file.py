@@ -58,7 +58,27 @@ def image2convmatrix(image, kernelsize, padsize):
     return np.array(convmatrix[0])
 
 
-def filt2vec(W,dims):
+def convout2image(matrix, imagedims):
+    """
+    converts matmul convolution result to image
+
+    Parameters
+    ----------
+    matrix : ndarray
+        matmul convolution result
+    imagedims : tuple
+        tuple containing original image resolution
+
+    Returns
+    -------
+    TYPE
+        DESCRIPTION.
+
+    """
+    return matrix.reshape(imagedims)
+
+
+def filt2vec(W, dims):
     """
     Turns filter kernel matrix into vector
 
