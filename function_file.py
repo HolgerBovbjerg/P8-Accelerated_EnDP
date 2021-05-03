@@ -16,7 +16,7 @@ def import_image(imagefolder, imagenumber):
 
     Parameters
     ----------
-    imagefolder : string
+    imagefolder : str
         path to images.
     imagenumber : int
         image number.
