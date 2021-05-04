@@ -2,9 +2,9 @@ import numpy as np
 from scipy.linalg import circulant
 import scipy.fft as scfft
 import scipy.signal as ss
+from dask.distributed import Client, wait
+import torch
 
-
-# from IPython import get_ipython
 
 def Naive_Mult(A, B):
     # dimension check
@@ -19,6 +19,28 @@ def Naive_Mult(A, B):
 
     else:
         return print('Dimensions must match')
+
+
+def DASK_mult(matrix, vector, workers, blocksize):
+    matrix = np.array(matrix[0]).transpose()
+    client = Client(n_workers=workers)
+    results = []
+    blockno = matrix.shape[0] // blocksize
+
+    for block in range(blockno):
+        # Send the data to the cluster as this is best practice for large data.
+        data = matrix[blocksize * block:blocksize * block + blocksize]
+        big_future = client.scatter(data)
+        results.append(
+            client.submit(np.matmul, big_future, vector)
+        )
+
+    client.gather(results)
+    out_matrix = np.vstack([result.result() for result in results])
+    wait(out_matrix)
+    client.close()
+
+    return torch.tensor(out_matrix).view(1, 224, 224)
 
 
 def fft_mult(photo_matrix, vector):
@@ -110,9 +132,9 @@ def fft_mult_vec_3(photo_matrix, vector):
     ts = scfft.fft(photo_matrix, axis=1)
     ws = scfft.fft(vector.reshape((n, n)), axis=1)
 
-    t_temp = np.empty((n*n, n), dtype=complex)
+    t_temp = np.empty((n * n, n), dtype=complex)
     for j in np.arange(n):
-        t_temp[j*n:(j+1)*n] = np.roll(np.flipud(np.roll(ts, -j, 0)), 1, 0)
+        t_temp[j * n:(j + 1) * n] = np.roll(np.flipud(np.roll(ts, -j, 0)), 1, 0)
 
     x = np.sum(t_temp.reshape(n, n, n) * ws, 1)
     out = np.real(scfft.ifft(x)).reshape(n ** 2)
@@ -130,80 +152,10 @@ def fft_mult_vec_4(photo_matrix, vector):
     ts = scfft.fft(photo_matrix, axis=1)
     ws = scfft.fft(vector.reshape((n, n)), axis=1)
 
-    t_temp = np.empty((n*n, n), dtype=complex)
+    t_temp = np.empty((n * n, n), dtype=complex)
     for j in np.arange(n):
-        t_temp[j*n:(j+1)*n] = np.roll(np.flipud(np.roll(ts, -j, 0)), 1, 0)
+        t_temp[j * n:(j + 1) * n] = np.roll(np.flipud(np.roll(ts, -j, 0)), 1, 0)
 
     x = np.einsum('ij,kij->kj', ws, t_temp.reshape(n, n, n))
     out = np.real(scfft.ifft(x)).reshape(n ** 2)
     return out
-
-
-
-# TODO: Lav det så hver circulant produkt regnes distribueret.
-#
-#
-# ipython = get_ipython()
-# n = 4
-#
-# data = np.random.randint(0, 255, (n, n))  # photo + zeropadding
-# Q = np.random.randint(0, 100, n*n)  # mean vector of weights
-#
-# A = circulant(data[0])
-# B = circulant(data[1])
-# C = circulant(data[2])
-# D = circulant(data[3])
-#
-# data_block = np.block([
-#     [A, D, C, B],
-#     [B, A, D, C],
-#     [C, B, A, D],
-#     [D, C, B, A]
-# ])
-#
-# data = np.array([
-#     [1, 2, 3, 0],
-#     [4, 5, 6, 0],
-#     [7, 8, 9, 0],
-#     [0, 0, 0, 0]
-# ])
-
-# data3 = np.array([
-#     [1, 2, 3],
-#     [4, 5, 6],
-#     [7, 8, 9],
-# ])
-# Q = np.array([7,5,0,0, 3,1,0,0, 0,0,0,0, 0,0,0,0])
-
-# Q3 = np.array([
-#     [7, 5],
-#     [3, 1]
-# ])
-# #
-# result = scfft.ifft2(scfft.fft2(data3,(4, 4)) * scfft.fft2(Q3, (4, 4)))
-# print(result)
-
-# result = fft_mult_vec_3(data, Q)
-# print(result.reshape((4,4)))
-
-# result = ss.convolve2d(data3, Q3)
-# print(result)
-
-
-# test = np.dot(data_block, Q)
-# diff = test-result
-# print(diff)
-
-#
-# print('ref')
-# ipython.magic("timeit -n 1000 -r 20 fft_mult(data, Q)")
-# print('vec')
-# ipython.magic("timeit -n 1000 -r 20 fft_mult_vec(data, Q)")
-# print('vec2')
-# ipython.magic("timeit -n 1000 -r 20 fft_mult_vec_2(data, Q)")
-# print('vec3')
-# ipython.magic("timeit -n 1000 -r 20 fft_mult_vec_3(data, Q)")
-# print('vec4')
-# ipython.magic("timeit -n 1000 -r 20 fft_mult_vec_4(data, Q)")
-#
-# # ipython.magic("timeit np.dot(data_block, Q)")
