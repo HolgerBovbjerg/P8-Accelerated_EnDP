@@ -11,6 +11,7 @@ import torch
 import os
 import numpy as np
 import function_file as ff
+import Matrix_Vector_mult as mv
 
 def convolution_layer(input_data,
                       input_channels,
@@ -60,23 +61,24 @@ if __name__ == "__main__":
     dir_path = os.path.dirname(os.path.realpath(__file__))
     imagepath = dir_path + "/Resized_images"
     batch_size = 16
-    input_size = 224
+    input_size = 32
     input_channels = 3
     
     images = np.empty((batch_size, input_channels, input_size, input_size))
     for i in range(batch_size):
         images[i] = ff.import_image(imagepath, i)
-    plt.imshow(images[1, 1, :, :], cmap='gray')
+    plt.imshow(images[0, 0, :, :], cmap='gray')
     plt.show()
-    #%% Convolution layer 1
+    #%% Convolution layer 
     padsize = 1
     input_channels = 3
-    input_size = 224
+    input_size = 32
     input_kernels = 64
     kernel_size = 3
     output_channels = 64
-    output_size = 224
+    output_size = 32
     
+    # Sequential
     out = convolution_layer(images,
                           input_channels,
                           input_size,
@@ -85,6 +87,18 @@ if __name__ == "__main__":
                           padsize,
                           output_channels,
                           output_size)
+    # Parallel
+    workers = 12
+    mu_W = create_mean(input_kernels, kernel_size, input_channels)
+    convmatrix = ff.image2convmatrix(torch.tensor(images), kernel_size, padsize)
+    outdask = mv.DASK_blocked_mult(convmatrix, mu_W, 
+                            workers, input_size, 
+                            kernel_size, 
+                            input_channels)
     
-    plt.imshow(out[1, 1, :, :], cmap='gray')
+    plt.imshow(out[0, 0, :, :], cmap='gray')
     plt.show()
+    
+    plt.imshow(outdask, cmap='gray')
+    plt.show()
+    

@@ -3,7 +3,7 @@ from scipy.linalg import circulant
 import scipy.fft as scfft
 import scipy.signal as ss
 from dask.distributed import Client, wait
-import dask as da
+import dask.array as da
 import torch
 
 
@@ -23,33 +23,35 @@ def Naive_Mult(A, B):
 
 
 def DASK_blocked_mult(matrix, vector, workers, input_size, kernel_size, input_channels):
-    matrix = np.array(matrix[0][0])
-
-    matrix = da.from_array(matrix, chunks=(input_size, kernel_size ** 2))
-    vector = da.from_array(vector, chunks=(kernel_size ** 2))
+    matrix = matrix[0]
+    vector = vector[0]
+    # matrix = da.from_array(matrix, chunks=(kernel_size ** 2, input_size))
+    # vector = da.from_array(vector[0], chunks=(kernel_size ** 2))
 
     client = Client(n_workers=workers)
     blocks = input_channels
     results = []
     for i in range(input_size):
         for j in range(blocks):
-            toep = client.scatter(matrix[i, j])
-            vec_slice = client.scatter(vector[j])
+            toep = client.scatter(matrix[kernel_size**2*j:kernel_size**2*(j+1),
+                                         input_size*i:input_size*(i + 1)])
+            vec_slice = client.scatter(vector[kernel_size**2*j:kernel_size**2*(j+1)])
             results.append(
-                client.submit(np.matmul, toep, vec_slice)
+                client.submit(np.matmul, vec_slice, toep)
             )
 
-    out = []
+    out = np.empty((32,32))
     client.gather(results)
+    out_vector_slice = np.zeros(input_size)
     for i in range(input_size):
         for j in range(blocks):
-            out_vector_slice = out_vector_slice + results[blocks*i + j].result()
-
-        out.append(out_vector_slice)
-
+            out_vector_slice = out_vector_slice + results[j*input_size + i].result()
+        out[i, :]= out_vector_slice
+        
+        
     wait(out)
     client.close()
-    print(out)
+    return out
 
 
 def DASK_mult(matrix, vector, workers, blocksize):
