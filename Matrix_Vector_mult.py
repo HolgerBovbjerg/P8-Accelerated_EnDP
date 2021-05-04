@@ -3,6 +3,7 @@ from scipy.linalg import circulant
 import scipy.fft as scfft
 import scipy.signal as ss
 from dask.distributed import Client, wait
+import dask as da
 import torch
 
 
@@ -21,7 +22,45 @@ def Naive_Mult(A, B):
         return print('Dimensions must match')
 
 
+def DASK_blocked_mult(matrix, vector, workers, input_size, kernel_size, input_channels):
+    matrix = np.array(matrix[0][0])
+
+    matrix = da.from_array(matrix, chunks=(input_size, kernel_size ** 2))
+    vector = da.from_array(vector, chunks=(kernel_size ** 2))
+
+    client = Client(n_workers=workers)
+    blocks = input_channels
+    results = []
+    for i in range(input_size):
+        for j in range(blocks):
+            toep = client.scatter(matrix[i, j])
+            vec_slice = client.scatter(vector[j])
+            results.append(
+                client.submit(np.matmul, toep, vec_slice)
+            )
+
+    out = []
+    client.gather(results)
+    for i in range(input_size):
+        for j in range(blocks):
+            out_vector_slice = out_vector_slice + results[blocks*i + j].result()
+
+        out.append(out_vector_slice)
+
+    wait(out)
+    client.close()
+    print(out)
+
+
 def DASK_mult(matrix, vector, workers, blocksize):
+    """
+    Calculates the matrix-vector product using numpy on n workers in parallel.
+    :param matrix:
+    :param vector:
+    :param workers:
+    :param blocksize:
+    :return:
+    """
     matrix = np.array(matrix[0]).transpose()
     client = Client(n_workers=workers)
     results = []
