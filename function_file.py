@@ -55,7 +55,7 @@ def image2convmatrix(image, kernelsize, padsize):
     """
     unfold = torch.nn.Unfold(kernel_size=kernelsize, padding=padsize)
     convmatrix = unfold(image)
-    return np.array(convmatrix[0])
+    return np.array(convmatrix)
 
 
 def convout2image(matrix, imagedims):
