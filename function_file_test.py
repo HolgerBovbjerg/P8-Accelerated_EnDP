@@ -43,7 +43,9 @@ if __name__ == "__main__":
     for i in range(64):
         out = np.matmul(W_vec[:, i], convmatrix)
 
-    execution_time_numpy = (time.time()-start)/10
+    execution_time_numpy = (time.time()-start)/64
+    
+    
 
     out_image = ff.convout2image(out, (224, 224))
 

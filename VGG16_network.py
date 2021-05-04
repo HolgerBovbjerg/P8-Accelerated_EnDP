@@ -24,27 +24,17 @@ if __name__ == "__main__":
     
     start_time = time.time()
     
-    
+    for i in range(batch_size):
+        image = ff.import_image(imagepath, i)
+        convmatrix[i, :, :] = ff.image2convmatrix(image, 3, 1)
     
     #%% Convolution layer 1
-    padsize = 1
     input_channels = 3
     input_size = 224
     input_kernels = 64
     kernel_size = 3
     output_channels = 64
     output_size = 224
-    
-    for i in range(batch_size):
-        image = ff.import_image(imagepath, i)
-        convmatrix[i, :, :] = ff.image2convmatrix(image, input_channels, padsize)
-    
-    
-    # sobel_left = np.array([
-    #     [-1.0, 0.0, 1.0],
-    #     [-2.0, 0.0, 2.0],
-    #     [-1.0, 0.0, 1.0]
-    # ], dtype='float32')
 
     W1 = np.random.rand(input_kernels, kernel_size, kernel_size)
     # W1[63, :, :] = sobel_left
@@ -54,7 +44,6 @@ if __name__ == "__main__":
 
     start = time.time()
     out1 = np.empty((batch_size, output_channels, input_size**2))
-    
     for i in range(batch_size):
         for j in range(input_kernels):
             out1[i, j, :] = np.matmul(W1_vec[j, :], convmatrix[i, :, :])
@@ -95,6 +84,7 @@ if __name__ == "__main__":
     output_size = 224
 
     convmatrix2 = ff.image2convmatrix(torch.tensor(out_images1), kernel_size, padsize)
+    
     W2 = np.random.rand(input_channels, kernel_size, kernel_size)
     W2_vec = np.empty((input_kernels, kernel_size**2*input_channels))
     for i in range(input_kernels):
