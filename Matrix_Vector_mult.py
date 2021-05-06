@@ -1,10 +1,15 @@
+import os
+
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["NUMEXPR_NUM_THREADS"] = "1"
+os.environ["OMP_NUM_THREADS"] = "1"
+
 import numpy as np
-from scipy.linalg import circulant
 import scipy.fft as scfft
-import scipy.signal as ss
 from dask.distributed import Client, wait
-import dask.array as da
 import torch
+
+import function_file as ff
 
 
 def Naive_Mult(A, B):
@@ -22,55 +27,82 @@ def Naive_Mult(A, B):
         return print('Dimensions must match')
 
 
-def DASK_blocked_mult(matrix, vector, workers, input_size, kernel_size, input_channels):
-    matrix = matrix[0]
-    vector = vector[0]
-    # matrix = da.from_array(matrix, chunks=(kernel_size ** 2, input_size))
-    # vector = da.from_array(vector[0], chunks=(kernel_size ** 2))
-
+# DO NOT RUN, it takes forever.
+def DASK_block_mult(matrixs, vectors, workers, input_size, kernel_size, input_channels, batch_size, output_channels):
     client = Client(n_workers=workers)
     blocks = input_channels
     results = []
-    for i in range(input_size):
-        for j in range(blocks):
-            toep = client.scatter(matrix[kernel_size**2*j:kernel_size**2*(j+1),
-                                         input_size*i:input_size*(i + 1)])
-            vec_slice = client.scatter(vector[kernel_size**2*j:kernel_size**2*(j+1)])
-            results.append(
-                client.submit(np.matmul, vec_slice, toep)
-            )
 
-    out = np.empty((32,32))
+    for k in range(batch_size):
+        matrix = matrixs[k].transpose()
+        for p in range(output_channels):
+            print('ping')
+            vector = vectors[p]
+            for i in range(input_size):
+                for j in range(blocks):
+                    toep = client.scatter(matrix[input_size * i:input_size * (i + 1),
+                                          kernel_size ** 2 * j:kernel_size ** 2 * (j + 1)]
+                                          )
+                    vec_slice = client.scatter(vector[kernel_size ** 2 * j:kernel_size ** 2 * (j + 1)])
+                    results.append(
+                        client.submit(np.matmul, toep, vec_slice)
+                    )
+
+    out_batches = np.zeros((batch_size, output_channels, input_size, input_size))
     client.gather(results)
-    out_vector_slice = np.zeros(input_size)
-    for i in range(input_size):
-        for j in range(blocks):
-            out_vector_slice = out_vector_slice + results[j*input_size + i].result()
-        out[i, :]= out_vector_slice
-        
-        
-    wait(out)
+    for k in range(batch_size):
+        out_channels = np.zeros((out_channels, input_size, input_size))
+        for p in range(output_channels):
+            out = np.zeros((32, 32))
+            for i in range(input_size):
+                out_vector_slice = np.zeros(input_size)
+                for j in range(blocks):
+                    print(f'index = {((j + i * blocks) + p * blocks * input_size) + k * batch_size}')
+                    out_vector_slice = out_vector_slice + results[i * blocks + j].result()
+                out[i, :] = out_vector_slice
+            out_channels[p, :, :] = out[:, :]
+        out_batches[k, :, :, :] = out_channels[:, :, :]
+
+    wait(out_batches)
     client.close()
-    return out
+    return out_batches
 
 
-def DASK_mult(matrix, vector, workers, blocksize):
+def DASK_batch_mult(matrix_input, vector_input, workers, batch_size, input_size, output_channels):
+    client = Client(n_workers=workers)
+    results = []
+    batch_no = matrix_input.shape[0] // batch_size
+
+    for i in range(batch_no):
+        batch = client.scatter(matrix_input[i * batch_size: i * batch_size + batch_size])
+        results.append(
+            client.submit(ff.convolution_mean, batch, vector_input, batch_size, vector_input.shape[0])
+        )
+
+    client.gather(results)
+    out_tensor = np.zeros((batch_size * batch_no, output_channels, input_size, input_size))
+    for i in range(batch_no):
+        out_tensor[i * batch_size: i * batch_size + batch_size] = results[i].result().reshape(batch_size,
+                                                                                              output_channels,
+                                                                                              input_size, input_size)
+
+    return out_tensor
+
+
+def DASK_panel_mult(matrix, vector, workers, input_size):
     """
     Calculates the matrix-vector product using numpy on n workers in parallel.
-    :param matrix:
-    :param vector:
-    :param workers:
-    :param blocksize:
-    :return:
+    The input matrix is divided into panels of
+
     """
     matrix = np.array(matrix[0]).transpose()
     client = Client(n_workers=workers)
     results = []
-    blockno = matrix.shape[0] // blocksize
+    blockno = matrix.shape[0] // input_size
 
     for block in range(blockno):
         # Send the data to the cluster as this is best practice for large data.
-        data = matrix[blocksize * block:blocksize * block + blocksize]
+        data = matrix[input_size * block:input_size * block + input_size]
         big_future = client.scatter(data)
         results.append(
             client.submit(np.matmul, big_future, vector)
