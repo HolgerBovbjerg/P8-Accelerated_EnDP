@@ -4,7 +4,11 @@ Created on Mon May  3 10:39:49 2021
 
 @author: holge
 """
+import os
 
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["NUMEXPR_NUM_THREADS"] = "1"
+os.environ["OMP_NUM_THREADS"] = "1"
 import numpy as np
 import torch
 from torchvision import datasets, transforms
@@ -85,7 +89,7 @@ def filt2vec(W, dims):
     Parameters
     ----------
     W : ndarray
-        Filter kernel wieght matrix
+        Filter kernel weight matrix
     dims : int
         number of input channels (e.g. 3 for RGB images)
 
@@ -101,5 +105,13 @@ def filt2vec(W, dims):
     # Convolution output channel
     W_temp = np.repeat(W, dims, axis=1)
     # Make into tensor and "reshape" into one vector
-    W_vec = np.reshape(W_temp, (1, (size[0]**2)*dims))
+    W_vec = np.reshape(W_temp, (1, (size[0] ** 2) * dims))
     return W_vec
+
+
+def convolution_mean(X, mu_W, batch_size, input_kernels):
+    mu_z = np.empty((batch_size, input_kernels, X.shape[2]))
+    for i in range(batch_size):
+        for j in range(input_kernels):
+            mu_z[i, j, :] = np.matmul(mu_W[j, :], X[i, :, :])
+    return mu_z
