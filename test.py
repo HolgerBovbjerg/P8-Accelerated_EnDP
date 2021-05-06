@@ -9,3 +9,5 @@ A = np.array([
 B = np.transpose(A)+ np.ones(3)
 
 C = np.sum(B*A, 1)
+
+print(C)
