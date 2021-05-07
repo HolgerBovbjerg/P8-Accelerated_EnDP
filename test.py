@@ -1,11 +1,21 @@
+import os
+
+slow = True
+# slow = False
+if slow:
+    os.environ["MKL_NUM_THREADS"] = "1"
+
 import numpy as np
+import time
 
-A = np.array([
-    [1, 2, 3],
-    [1, 2, 3],
-    [1, 2, 3]
-])
+a = np.random.random((4000, 4000))
+b = np.random.random((4000, 4000))
+n = 20
 
-B = np.transpose(A)+ np.ones(3)
+print(f'starting with slow = {slow}')
+start = time.time()
+for i in range(n):
+    c = np.matmul(a, b)
 
-C = np.sum(B*A, 1)
+slut = time.time() - start
+print(f'time = {slut}')
