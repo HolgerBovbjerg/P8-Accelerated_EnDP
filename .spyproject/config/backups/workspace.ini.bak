@@ -6,5 +6,5 @@ save_non_project_files = False
 
 [main]
 version = 0.2.0
-recent_files = ['convolution_script.py', 'matmul_experiment.py', 'VGG16_network.py', 'dask_experiment.py']
+recent_files = ['convolution_script.py', 'Matrix_Vector_mult.py', 'function_file.py', 'VGG16_network.py', 'Time_tests.py', 'dask_experiment.py']
 

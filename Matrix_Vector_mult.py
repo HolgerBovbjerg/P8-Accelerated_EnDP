@@ -1,9 +1,5 @@
 import os
 
-os.environ["MKL_NUM_THREADS"] = "1"
-os.environ["NUMEXPR_NUM_THREADS"] = "1"
-os.environ["OMP_NUM_THREADS"] = "1"
-
 import numpy as np
 import scipy.fft as scfft
 from dask.distributed import Client, wait
@@ -51,7 +47,7 @@ def DASK_block_mult(matrixs, vectors, workers, input_size, kernel_size, input_ch
     out_batches = np.zeros((batch_size, output_channels, input_size, input_size))
     client.gather(results)
     for k in range(batch_size):
-        out_channels = np.zeros((out_channels, input_size, input_size))
+        out_channels = np.zeros((output_channels, input_size, input_size))
         for p in range(output_channels):
             out = np.zeros((32, 32))
             for i in range(input_size):
