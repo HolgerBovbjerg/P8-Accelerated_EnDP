@@ -1,0 +1,15 @@
+connect til head node locahost:8000 til 10.92.0.188:8787: ssh -L 8000:localhost:8787 ubuntu@10.92.0.188 -i HSBKeyPair.pem
+start dask scheduler: dask-scheduler
+log på compute nodes og skriv dask-worker cluster 
+	ssh ubuntu@10.92.0.98 -i HSBKeyPair.pem
+	ssh ubuntu@10.92.0.74 -i HSBKeyPair.pem
+	ssh ubuntu@10.92.0.75 -i HSBKeyPair.pem
+	ssh ubuntu@10.92.0.525 -i HSBKeyPair.pem
+	
+gå ind på dask dashboard: i browser - locahost:8000
+
+log på head-node via ssh i ny terminal: ssh ubuntu@10.92.0.525 -i HSBKeyPair.pem 
+kør program: python3 program.py
+
+success!
+
