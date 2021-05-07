@@ -6,12 +6,17 @@ Created on Mon May  3 10:39:49 2021
 """
 import os
 
+# # slow = True
+# slow = False
+# if slow:
+#     os.environ["MKL_NUM_THREADS"] = "1"
+
 import numpy as np
 import torch
 from torchvision import datasets, transforms
 from dask.distributed import Client
-import dask.array as da
 import dask
+
 
 def import_image(imagefolder, imagenumber):
     """
@@ -61,24 +66,12 @@ def image2convmatrix(image, kernelsize, padsize):
     return np.array(convmatrix)
 
 
-def convout2image(matrix, imagedims):
-    """
-    converts matmul convolution result to image
-
-    Parameters
-    ----------
-    matrix : ndarray
-        matmul convolution result
-    imagedims : tuple
-        tuple containing original image resolution
-
-    Returns
-    -------
-    TYPE
-        DESCRIPTION.
-
-    """
-    return matrix.reshape(imagedims)
+def convout2image(convmean, batch_size, output_channels, output_size):
+    out_images = np.empty((batch_size, output_channels, output_size, output_size))
+    for i in range(batch_size):
+        for j in range(output_channels):
+            out_images[i, j, :, :] = convmean[i, j, :].reshape((output_size, output_size))
+    return out_images
 
 
 def filt2vec(W, dims):
@@ -115,6 +108,15 @@ def convolution_mean(X, mu_W, batch_size, input_kernels):
             mu_z[i, j, :] = np.matmul(mu_W[j, :], X[i, :, :])
     return mu_z
 
+
+def convolution_mean(X, mu_W, batch_size, input_kernels):
+    mu_z = np.empty((batch_size, input_kernels, X.shape[2]))
+    for i in range(batch_size):
+        for j in range(input_kernels):
+            mu_z[i, j, :] = np.matmul(mu_W[j, :], X[i, :, :])
+    return mu_z
+
+
 def convolution_layer(input_data,
                       input_channels,
                       input_size,
@@ -133,34 +135,25 @@ def convolution_layer(input_data,
 
 
 def convolution_layer_distributed(input_data,
-                      input_channels,
-                      input_size,
-                      input_kernels,
-                      kernel_size,
-                      padsize,
-                      output_channels,
-                      output_size,
-                      client):
-    
+                                  input_channels,
+                                  input_size,
+                                  input_kernels,
+                                  kernel_size,
+                                  padsize,
+                                  output_channels,
+                                  output_size,
+                                  client):
     batch_size = input_data.shape[0]
     convmatrix = image2convmatrix(torch.tensor(input_data), kernel_size, padsize)
     mean = create_mean(input_kernels, kernel_size, input_channels)
     mu_z = convolution_mean_futures(convmatrix, mean, batch_size, input_kernels, client)
-    
+
     out_images = np.empty((batch_size, output_channels, output_size, output_size))
     for i in range(batch_size):
         for j in range(output_channels):
             out_images[i, j, :, :] = convout2image(mu_z[i, j, :], (output_size, output_size))
 
     return out_images
-
-
-def convolution_mean(X, mu_W, batch_size, input_kernels):
-    mu_z = np.empty((batch_size, input_kernels, X.shape[2]))
-    for i in range(batch_size):
-        for j in range(input_kernels):
-            mu_z[i, j, :] = np.matmul(mu_W[j, :], X[i, :, :])
-    return mu_z
 
 
 def convolution_mean_delayed(X, mu_W, batch_size, input_kernels):
@@ -174,7 +167,7 @@ def convolution_mean_delayed(X, mu_W, batch_size, input_kernels):
     mu_z_computed = dask.compute(mu_z_delayed)
     for i in range(batch_size):
         for j in range(input_kernels):
-            mu_z[i, j, :] = mu_z_computed[0][i*j]
+            mu_z[i, j, :] = mu_z_computed[0][i * j]
     return mu_z
 
 
@@ -184,10 +177,10 @@ def convolution_mean_futures(X, mu_W, batch_size, input_kernels, client):
         for j in range(input_kernels):
             futures = client.submit(np.matmul, mu_W[j, :], X[i, :, :])
     results = client.gather(futures)
-    
+
     return mu_z
-  
-          
+
+
 def convolution_cov(X, Sigma_W, batch_size, input_kernels):
     Sigma_z = np.empty((batch_size, input_kernels, X.shape[2], X.shape[2]))
     for i in range(batch_size):
@@ -196,7 +189,6 @@ def convolution_cov(X, Sigma_W, batch_size, input_kernels):
                                             np.matmul(Sigma_W[j, :], X[i, :, :])
                                             )
     return Sigma_z
-
 
 
 def create_mean(input_kernels, kernel_size, input_channels):
@@ -208,13 +200,6 @@ def create_cov(input_kernels, kernel_size, input_channels):
     Sigma = np.random.rand(input_kernels, kernel_size ** 2 * input_channels, kernel_size ** 2 * input_channels)
     return Sigma
 
-
-def convout2image(convmean, batch_size, output_channels, output_size):
-    out_images = np.empty((batch_size, output_channels, output_size, output_size))
-    for i in range(batch_size):
-        for j in range(output_channels):
-            out_images[i, j, :, :] = convout2image(convmean[i, j, :], (output_size, output_size))
-    return out_images
 
 def DASK_batch_mult(matrix_input, vector_input, workers, batch_size, input_size, output_channels):
     client = Client(n_workers=workers)
@@ -228,7 +213,7 @@ def DASK_batch_mult(matrix_input, vector_input, workers, batch_size, input_size,
         )
 
     client.gather(results)
-    out_tensor = np.zeros((batch_size * batch_no, output_channels, input_size, input_size))
+    out_tensor = np.empty((batch_size * batch_no, output_channels, input_size, input_size))
     for i in range(batch_no):
         out_tensor[i * batch_size: i * batch_size + batch_size] = results[i].result().reshape(batch_size,
                                                                                               output_channels,
