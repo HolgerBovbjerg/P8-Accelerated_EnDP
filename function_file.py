@@ -6,15 +6,16 @@ Created on Mon May  3 10:39:49 2021
 """
 import os
 
-# # slow = True
+slow = True
 # slow = False
-# if slow:
-#     os.environ["MKL_NUM_THREADS"] = "1"
+if slow:
+    os.environ["MKL_NUM_THREADS"] = "1"
 
 import numpy as np
 import torch
 from torchvision import datasets, transforms
 from dask.distributed import Client
+import dask.array as da
 import dask
 
 
@@ -126,7 +127,7 @@ def convolution_layer(input_data,
                       output_channels,
                       output_size):
     batch_size = input_data.shape[0]
-    convmatrix = ff.image2convmatrix(torch.tensor(input_data), kernel_size, padsize)
+    convmatrix = image2convmatrix(torch.tensor(input_data), kernel_size, padsize)
     mean = create_mean(input_kernels, kernel_size, input_channels)
     cov = create_cov(input_kernels, kernel_size, input_channels)
     mu_z = convolution_mean(convmatrix, mean, batch_size, input_kernels)
@@ -157,7 +158,6 @@ def convolution_layer_distributed(input_data,
 
 
 def convolution_mean_delayed(X, mu_W, batch_size, input_kernels):
-    mu_z = np.empty((batch_size, input_kernels, X.shape[2]))
     results = []
     for i in range(batch_size):
         for j in range(input_kernels):
@@ -165,6 +165,8 @@ def convolution_mean_delayed(X, mu_W, batch_size, input_kernels):
             results.append(result)
     mu_z_delayed = dask.persist(*results)
     mu_z_computed = dask.compute(mu_z_delayed)
+    
+    mu_z = np.empty((batch_size, input_kernels, X.shape[2]))
     for i in range(batch_size):
         for j in range(input_kernels):
             mu_z[i, j, :] = mu_z_computed[0][i * j]
@@ -220,3 +222,19 @@ def DASK_batch_mult(matrix_input, vector_input, workers, batch_size, input_size,
                                                                                               input_size, input_size)
 
     return out_tensor
+
+def mvn_random(mean, cov, N):
+    dim = cov.shape[0]
+    A = np.linalg.cholesky(cov)
+    N = 1000
+    z = np.random.normal(0, 1, (dim, N))   
+    x = np.add(mean,np.dot(A,z))
+    return x
+
+def mvn_random_DASK(mean, cov, N):
+    dim = cov.shape[0]
+    A = da.linalg.cholesky(cov)
+    N = 1000
+    z = da.random.normal(0, 1, (dim, N))   
+    x = da.add(mean,np.dot(A,z))
+    return x
