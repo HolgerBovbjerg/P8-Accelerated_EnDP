@@ -23,8 +23,8 @@ if __name__ == "__main__":
     # %% Import images
     dir_path = os.path.dirname(os.path.realpath(__file__))
     imagepath = dir_path + "/Resized_images"
-    batch_size = 128
-    input_size = 224
+    batch_size = 16
+    input_size = 112
     input_channels = 3
 
     images = np.random.random((batch_size, input_channels, input_size, input_size))
@@ -36,11 +36,11 @@ if __name__ == "__main__":
     # %% Convolution layer
     padsize = 1
     input_channels = 3
-    input_size = 224
+    input_size = 112
     input_kernels = 64
     kernel_size = 3
     output_channels = 64
-    output_size = 224
+    output_size = 112
 
     # test
     
