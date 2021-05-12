@@ -14,7 +14,7 @@ import os
 import numpy as np
 import torch
 from torchvision import datasets, transforms
-from dask.distributed import Client
+from dask.distributed import Client, wait
 import dask
 
 
@@ -61,6 +61,7 @@ def image2convmatrix(image, kernelsize, padsize):
         Convolution matrix
 
     """
+    image = torch.tensor(image)
     unfold = torch.nn.Unfold(kernel_size=kernelsize, padding=padsize)
     convmatrix = unfold(image)
     return np.array(convmatrix)
@@ -108,13 +109,6 @@ def convolution_mean(X, mu_W, batch_size, input_kernels):
             mu_z[i, j, :] = np.matmul(mu_W[j, :], X[i, :, :])
     return mu_z
 
-
-def convolution_mean(X, mu_W, batch_size, input_kernels):
-    mu_z = np.empty((batch_size, input_kernels, X.shape[2]))
-    for i in range(batch_size):
-        for j in range(input_kernels):
-            mu_z[i, j, :] = np.matmul(mu_W[j, :], X[i, :, :])
-    return mu_z
 
 
 def convolution_layer(input_data,
@@ -212,11 +206,14 @@ def DASK_batch_mult(matrix_input, vector_input, workers, batch_size, input_size,
             client.submit(convolution_mean, batch, vector_input, batch_size, vector_input.shape[0])
         )
 
-    client.gather(results)
+    wait(results)
+    data = client.gather(results)
     out_tensor = np.empty((batch_size * batch_no, output_channels, input_size, input_size))
     for i in range(batch_no):
-        out_tensor[i * batch_size: i * batch_size + batch_size] = results[i].result().reshape(batch_size,
-                                                                                              output_channels,
-                                                                                              input_size, input_size)
+        out_tensor[i * batch_size: i * batch_size + batch_size] = data[i].reshape(batch_size,
+                                                                                  output_channels,
+                                                                                  input_size, input_size)
+
+    client.shutdown()
 
     return out_tensor
