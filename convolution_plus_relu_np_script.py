@@ -9,10 +9,8 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 import time
-import torch
-
+import torch 
 import function_file as ff
-import Matrix_Vector_mult as mv
 
 
 if __name__ == "__main__":
@@ -20,7 +18,7 @@ if __name__ == "__main__":
     dir_path = os.path.dirname(os.path.realpath(__file__))
     imagepath = dir_path + "/Resized_images"
     batch_size = 16
-    input_size = 32
+    input_size = 8
     input_channels = 3
     # X = np.empty((batch_size, 27, 224**2))
     # for i in range(batch_size):
@@ -34,21 +32,20 @@ if __name__ == "__main__":
     #%% Convolution layer 1
     # Settings
     input_channels = 3
-    input_size = 32
+    input_size = 8
     input_kernels = 64
     kernel_size = 3
     output_channels = 64
-    output_size = 32
+    output_size = 8
     samples = 10
     
-    X = np.random.random((batch_size, kernel_size**2*input_channels, input_size**2))
+    X = np.random.standard_normal((batch_size, kernel_size**2*input_channels, input_size**2))
     
-    # Create weight vector
-    mean_W1 = np.random.random((input_kernels, kernel_size**2*input_channels))
-    A = np.random.random((input_kernels, kernel_size**2*input_channels, kernel_size**2*input_channels))
+    # Create weight mean vector and covariance matrix
+    mean_W1 = np.random.standard_normal((input_kernels, kernel_size**2*input_channels))
     cov_W1 = np.empty((input_kernels, kernel_size**2*input_channels, kernel_size**2*input_channels))
     for j in range(input_kernels):
-        cov_W1[j, :, :] = np.cov(A[j, :, :])
+        cov_W1[j, :, :] = ff.random_cov(kernel_size**2*input_channels)
     
     start = time.time()
     
@@ -65,23 +62,23 @@ if __name__ == "__main__":
         for j in range(input_kernels):
             mean_z1[i, j, :] = np.matmul(mean_W1[j, :], X[i, :, :])
             cov_z1[i, j, :, :] = np.matmul(X[i, :, :].transpose(), np.matmul(cov_W1[j, :, :], X[i, :, :]))
-            z1[i, j, :, :] = np.random.multivariate_normal(mean_z1[i, j, :], cov_z1[i, j, :, :], samples).transpose()
-    
+            z1[i, j, :, :] = ff.mvn_random(mean_z1[i, j, :], cov_z1[i, j, :, :], samples)
+            
     # ReLU
     g1 = np.array(relu(torch.tensor(z1))) 
     
     # Mean and cov from ReLU
     for i in range(batch_size):
-            for j in range(input_kernels):        
-                mean_g1[i, j, :] = np.mean((g1[i, j, :, :]))
-                cov_g1[i, j, :, :] = np.cov((g1[i, j, :, :]))
-    
+        for j in range(input_kernels):        
+            mean_g1[i, j, :] = np.mean(g1[i, j, :, :])
+            cov_g1[i, j, :, :] = np.cov(g1[i, j, :, :])
+
     # Output image
-    out_images1 = ff.convout2image(mean_z1, batch_size, output_channels, output_size)
+    out_images1 = ff.convout2image(mean_g1, batch_size, output_channels, output_size)
     execution_time_conv1 = (time.time() - start)
     
-    
-    plt.imshow(out_images1[1, 1, :, :], cmap='gray')
+    #%%
+    plt.imshow(out_images1[3, 7, :, :], cmap='gray')
     plt.show()
     #%%    
     # test_image = ff.convout2image(g1[:, :, :, 1], batch_size, output_channels, output_size)

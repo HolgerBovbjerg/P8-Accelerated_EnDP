@@ -17,16 +17,20 @@ import Matrix_Vector_mult as mv
 
 if __name__ == "__main__":
     #%% Import images
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    imagepath = dir_path + "/Resized_images"
+    # dir_path = os.path.dirname(os.path.realpath(__file__))
+    # imagepath = dir_path + "/Resized_images"
     batch_size = 16
+    input_size = 224
     convmatrix = np.empty((batch_size, 27, 224**2))
     
     start_time = time.time()
     
     for i in range(batch_size):
-        image = ff.import_image(imagepath, i)
-        convmatrix[i, :, :] = ff.image2convmatrix(image, 3, 1)
+        # image = ff.import_image(imagepath, i)
+        image = np.random.random((1, 3, input_size, input_size))
+        convmatrix[i, :, :] = ff.image2convmatrix(torch.tensor(image), 3, 1)
+    
+    
     
     #%% Convolution layer 1
     input_channels = 3
@@ -48,10 +52,7 @@ if __name__ == "__main__":
         for j in range(input_kernels):
             out1[i, j, :] = np.matmul(W1_vec[j, :], convmatrix[i, :, :])
 
-    out_images1 = np.empty((batch_size, output_channels, output_size, output_size))
-    for i in range(batch_size):
-        for j in range(output_channels):
-            out_images1[i, j, :, :] = ff.convout2image(out1[i, j, :], (output_size, output_size))
+    out_images1 = ff.convout2image(out1, batch_size, output_channels, output_size)
 
     execution_time_conv1 = (time.time() - start)
     
@@ -96,11 +97,7 @@ if __name__ == "__main__":
         for j in range(input_kernels):
             out2[i, j, :] = np.matmul(W2_vec[j, :], convmatrix2[i, :, :])
 
-    out_images2 = np.empty((batch_size, output_channels, output_size, output_size))
-    for i in range(batch_size):
-        for j in range(output_channels):
-            out_images2[i, j, :, :] = ff.convout2image(out2[i, j, :],
-                                                       (output_size, output_size))
+    out_images2 = ff.convout2image(out2, batch_size, output_channels, output_size)
 
     execution_time_conv2 = (time.time() - start)
 
@@ -139,12 +136,7 @@ if __name__ == "__main__":
         for j in range(input_kernels):
             out3[i, j, :] = np.matmul(W3_vec[j, :], convmatrix3[i, :, :])
 
-    out_images3 = np.empty((batch_size, output_channels, output_size, output_size))
-    for i in range(batch_size):
-        for j in range(output_channels):
-            out_images3[i, j, :, :] = ff.convout2image(out3[i, j, :],
-                                                       (output_size, output_size))
-
+    out_images3 = ff.convout2image(out3, batch_size, output_channels, output_size)
     execution_time_conv3 = (time.time() - start)
 
     plt.imshow(out_images3[1, 1, :, :], cmap='gray')
@@ -171,11 +163,7 @@ if __name__ == "__main__":
         for j in range(input_kernels):
             out4[i, j, :] = np.matmul(W4_vec[j, :], convmatrix4[i, :, :])
 
-    out_images4 = np.empty((batch_size, output_channels, output_size, output_size))
-    for i in range(batch_size):
-        for j in range(output_channels):
-            out_images4[i, j, :, :] = ff.convout2image(out4[i, j, :],
-                                                       (output_size, output_size))
+    out_images4 = ff.convout2image(out4, batch_size, output_channels, output_size)
 
     execution_time_conv4 = (time.time() - start)
 
@@ -214,12 +202,7 @@ if __name__ == "__main__":
         for j in range(input_kernels):
             out5[i, j, :] = np.matmul(W5_vec[j, :], convmatrix5[i, :, :])
 
-    out_images5 = np.empty((batch_size, output_channels, output_size, output_size))
-    for i in range(batch_size):
-        for j in range(output_channels):
-            out_images5[i, j, :, :] = ff.convout2image(out5[i, j, :],
-                                                        (output_size, output_size))
-
+    out_images5 = ff.convout2image(out5, batch_size, output_channels, output_size)
     execution_time_conv5 = (time.time() - start)
 
     plt.imshow(out_images5[1, 1, :, :], cmap='gray')
@@ -246,12 +229,7 @@ if __name__ == "__main__":
         for j in range(input_kernels):
             out6[i, j, :] = np.matmul(W6_vec[j, :], convmatrix6[i, :, :])
 
-    out_images6 = np.empty((batch_size, output_channels, output_size, output_size))
-    for i in range(batch_size):
-        for j in range(output_channels):
-            out_images6[i, j, :, :] = ff.convout2image(out6[i, j, :],
-                                                        (output_size, output_size))
-
+    out_images6 = ff.convout2image(out6, batch_size, output_channels, output_size)
     execution_time_conv6 = (time.time() - start)
 
     plt.imshow(out_images6[1, 1, :, :], cmap='gray')
@@ -278,11 +256,7 @@ if __name__ == "__main__":
         for j in range(input_kernels):
             out7[i, j, :] = np.matmul(W7_vec[j, :], convmatrix7[i, :, :])
 
-    out_images7 = np.empty((batch_size, output_channels, output_size, output_size))
-    for i in range(batch_size):
-        for j in range(output_channels):
-            out_images7[i, j, :, :] = ff.convout2image(out7[i, j, :],
-                                                        (output_size, output_size))
+    out_images7 = ff.convout2image(out7, batch_size, output_channels, output_size)
 
     execution_time_conv7 = (time.time() - start)
 
@@ -321,11 +295,7 @@ if __name__ == "__main__":
         for j in range(input_kernels):
             out8[i, j, :] = np.matmul(W8_vec[j, :], convmatrix8[i, :, :])
 
-    out_images8 = np.empty((batch_size, output_channels, output_size, output_size))
-    for i in range(batch_size):
-        for j in range(output_channels):
-            out_images8[i, j, :, :] = ff.convout2image(out8[i, j, :],
-                                                        (output_size, output_size))
+    out_images8 = ff.convout2image(out8, batch_size, output_channels, output_size)
 
     execution_time_conv8 = (time.time() - start)
 
@@ -353,11 +323,7 @@ if __name__ == "__main__":
         for j in range(input_kernels):
             out9[i, j, :] = np.matmul(W9_vec[j, :], convmatrix9[i, :, :])
 
-    out_images9 = np.empty((batch_size, output_channels, output_size, output_size))
-    for i in range(batch_size):
-        for j in range(output_channels):
-            out_images9[i, j, :, :] = ff.convout2image(out9[i, j, :],
-                                                        (output_size, output_size))
+    out_images9 = ff.convout2image(out9, batch_size, output_channels, output_size)
 
     execution_time_conv9 = (time.time() - start)
 
@@ -385,11 +351,7 @@ if __name__ == "__main__":
         for j in range(input_kernels):
             out9[i, j, :] = np.matmul(W10_vec[j, :], convmatrix10[i, :, :])
 
-    out_images10 = np.empty((batch_size, output_channels, output_size, output_size))
-    for i in range(batch_size):
-        for j in range(output_channels):
-            out_images10[i, j, :, :] = ff.convout2image(out10[i, j, :],
-                                                        (output_size, output_size))
+    out_images10 = ff.convout2image(out10, batch_size, output_channels, output_size)
 
     execution_time_conv10 = (time.time() - start)
 
@@ -428,11 +390,7 @@ if __name__ == "__main__":
         for j in range(input_kernels):
             out11[i, j, :] = np.matmul(W11_vec[j, :], convmatrix11[i, :, :])
 
-    out_images11 = np.empty((batch_size, output_channels, output_size, output_size))
-    for i in range(batch_size):
-        for j in range(output_channels):
-            out_images11[i, j, :, :] = ff.convout2image(out11[i, j, :],
-                                                        (output_size, output_size))
+    out_images11 = ff.convout2image(out11, batch_size, output_channels, output_size)
 
     execution_time_conv11 = (time.time() - start)
 
@@ -460,11 +418,7 @@ if __name__ == "__main__":
         for j in range(input_kernels):
             out11[i, j, :] = np.matmul(W12_vec[j, :], convmatrix12[i, :, :])
 
-    out_images12 = np.empty((batch_size, output_channels, output_size, output_size))
-    for i in range(batch_size):
-        for j in range(output_channels):
-            out_images12[i, j, :, :] = ff.convout2image(out12[i, j, :],
-                                                        (output_size, output_size))
+    out_images12 = ff.convout2image(out12, batch_size, output_channels, output_size)
 
     execution_time_conv12 = (time.time() - start)
 
@@ -492,11 +446,8 @@ if __name__ == "__main__":
         for j in range(input_kernels):
             out13[i, j, :] = np.matmul(W13_vec[j, :], convmatrix13[i, :, :])
 
-    out_images13 = np.empty((batch_size, output_channels, output_size, output_size))
-    for i in range(batch_size):
-        for j in range(output_channels):
-            out_images13[i, j, :, :] = ff.convout2image(out13[i, j, :],
-                                                        (output_size, output_size))
+  
+    out_images13 = ff.convout2image(out13, batch_size, output_channels, output_size)
 
     execution_time_conv13 = (time.time() - start)
 
