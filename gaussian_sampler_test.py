@@ -35,4 +35,4 @@ if __name__ == "__main__":
     
     cov = ff.random_cov(10)
     eigenvalues = np.linalg.eigvals(cov)
-    x = ff.mvn_random(np.zeros((10,1)), cov, 100)
+    x = ff.mvn_random(np.ones((10,1)), cov, 100)

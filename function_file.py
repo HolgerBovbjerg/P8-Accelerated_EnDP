@@ -228,23 +228,16 @@ def mvn_random(mean, cov, N):
     epsilon = 0.0001
     cov2 = cov + epsilon*np.identity(dim)
     A = np.linalg.cholesky(cov2)
-    
-    
-    # v, Q = np.linalg.eig(cov)
-    # V = np.diag(v)
-    # A = np.matmul(np.matmul(Q, np.sqrt(V)), Q.transpose()) 
-    
     z = np.random.standard_normal(size = (N, dim))   
-    x = np.dot(A, z.transpose())
-    x = np.outer(mean, np.ones(N)) + x
+    x = mean + np.dot(A, z.transpose())
     return x
 
 
 def mvn_random_DASK(mean, cov, N, dim):
-    A = da.linalg.cholesky(cov, lower = True)
-    N = 1000
-    z = da.random.normal(0, 1, (dim, N))   
-    x = da.add(mean,da.dot(A,z))
+    epsilon = 0.0001
+    A = da.linalg.cholesky(cov + epsilon*da.identity(dim), lower = True)
+    z = da.random.standard_normal(size = (N, dim))   
+    x = mean + da.dot(A, z.transpose())
     return x
 
 
