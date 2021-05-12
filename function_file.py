@@ -110,11 +110,11 @@ def convolution_mean(X, mu_W, batch_size, input_kernels):
     return mu_z
 
 
-def convolution_mean(X, mu_W, batch_size, input_kernels):
+def convolution_mean_DASK(X, mu_W, batch_size, input_kernels):
     mu_z = np.empty((batch_size, input_kernels, X.shape[2]))
     for i in range(batch_size):
         for j in range(input_kernels):
-            mu_z[i, j, :] = np.matmul(mu_W[j, :], X[i, :, :])
+            mu_z[i, j, :] = da.matmul(mu_W[j, :], X[i, :, :])
     return mu_z
 
 
@@ -225,16 +225,28 @@ def DASK_batch_mult(matrix_input, vector_input, workers, batch_size, input_size,
 
 def mvn_random(mean, cov, N):
     dim = cov.shape[0]
-    A = np.linalg.cholesky(cov)
-    N = 1000
-    z = np.random.normal(0, 1, (dim, N))   
-    x = np.add(mean,np.dot(A,z))
+    epsilon = 0.0001
+    cov2 = cov + epsilon*np.identity(dim)
+    A = np.linalg.cholesky(cov2)
+    z = np.random.standard_normal(size = (N, dim))   
+    x = mean + np.dot(A, z.transpose())
     return x
 
-def mvn_random_DASK(mean, cov, N):
-    dim = cov.shape[0]
-    A = da.linalg.cholesky(cov)
-    N = 1000
-    z = da.random.normal(0, 1, (dim, N))   
-    x = da.add(mean,np.dot(A,z))
+
+def mvn_random_DASK(mean, cov, N, dim):
+    epsilon = 0.0001
+    A = da.linalg.cholesky(cov + epsilon*da.identity(dim), lower = True)
+    z = da.random.standard_normal(size = (N, dim))   
+    x = mean + da.dot(A, z.transpose())
     return x
+
+
+def random_cov(dim):
+    A = np.random.standard_normal(size=(dim, dim))
+    cov = np.dot(A,A.transpose())
+    return cov   
+
+def random_cov_DASK(dim):
+    A = da.random.standard_normal(size=(dim, dim))
+    cov = da.dot(A,A.transpose())
+    return cov   
