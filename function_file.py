@@ -15,6 +15,7 @@ import numpy as np
 import torch
 from torchvision import datasets, transforms
 from dask.distributed import Client, wait
+import dask.array as da
 import dask
 
 
@@ -61,7 +62,6 @@ def image2convmatrix(image, kernelsize, padsize):
         Convolution matrix
 
     """
-    image = torch.tensor(image)
     unfold = torch.nn.Unfold(kernel_size=kernelsize, padding=padsize)
     convmatrix = unfold(image)
     return np.array(convmatrix)
@@ -110,6 +110,13 @@ def convolution_mean(X, mu_W, batch_size, input_kernels):
     return mu_z
 
 
+def convolution_mean_DASK(X, mu_W, batch_size, input_kernels):
+    mu_z = np.empty((batch_size, input_kernels, X.shape[2]))
+    for i in range(batch_size):
+        for j in range(input_kernels):
+            mu_z[i, j, :] = da.matmul(mu_W[j, :], X[i, :, :])
+    return mu_z
+
 
 def convolution_layer(input_data,
                       input_channels,
@@ -120,7 +127,7 @@ def convolution_layer(input_data,
                       output_channels,
                       output_size):
     batch_size = input_data.shape[0]
-    convmatrix = ff.image2convmatrix(torch.tensor(input_data), kernel_size, padsize)
+    convmatrix = image2convmatrix(torch.tensor(input_data), kernel_size, padsize)
     mean = create_mean(input_kernels, kernel_size, input_channels)
     cov = create_cov(input_kernels, kernel_size, input_channels)
     mu_z = convolution_mean(convmatrix, mean, batch_size, input_kernels)
@@ -159,6 +166,8 @@ def convolution_mean_delayed(X, mu_W, batch_size, input_kernels):
             results.append(result)
     mu_z_delayed = dask.persist(*results)
     mu_z_computed = dask.compute(mu_z_delayed)
+
+    mu_z = np.empty((batch_size, input_kernels, X.shape[2]))
     for i in range(batch_size):
         for j in range(input_kernels):
             mu_z[i, j, :] = mu_z_computed[0][i * j]
@@ -217,3 +226,31 @@ def DASK_batch_mult(matrix_input, vector_input, workers, batch_size, input_size,
     client.shutdown()
 
     return out_tensor
+
+def mvn_random(mean, cov, N):
+    dim = cov.shape[0]
+    epsilon = 0.0001
+    cov2 = cov + epsilon*np.identity(dim)
+    A = np.linalg.cholesky(cov2)
+    z = np.random.standard_normal(size = (N, dim))
+    x = mean + np.dot(A, z.transpose())
+    return x
+
+
+def mvn_random_DASK(mean, cov, N, dim):
+    epsilon = 0.0001
+    A = da.linalg.cholesky(cov + epsilon*da.identity(dim), lower = True)
+    z = da.random.standard_normal(size = (N, dim))
+    x = mean + da.dot(A, z.transpose())
+    return x
+
+
+def random_cov(dim):
+    A = np.random.standard_normal(size=(dim, dim))
+    cov = np.dot(A,A.transpose())
+    return cov
+
+def random_cov_DASK(dim):
+    A = da.random.standard_normal(size=(dim, dim))
+    cov = da.dot(A,A.transpose())
+    return cov
