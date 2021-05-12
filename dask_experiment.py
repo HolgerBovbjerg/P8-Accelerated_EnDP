@@ -1,32 +1,48 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed May  5 16:43:10 2021
+import os
 
-@author: holge
-"""
+slow = True
+# slow = False
+if slow:
+    os.environ["MKL_NUM_THREADS"] = "1"
 
-from dask.distributed import Client, wait
-
-import dask.array as da
-import numpy as np
 import time
+from dask.distributed import Client, LocalCluster, wait
+import multiprocessing as mp
+import dask.array as da
 
-def add(x1, x2):
-    return(x1 + x2)
+import function_file as ff
 
-if __name__ == "__main__":
-    
-    # client = Client('10.92.0.188:8786') 
-    client = Client
-    print(client)
-    # start = time.time()
-    # for i in range(100):
-    x1 = da.random.random((50000, 50000), chunks=(1000, 1000))
-    x2 = da.random.random((50000, 50000), chunks=(1000, 1000))
-    future = client.submit(da.add, x1, x2)
+if __name__ == '__main__':
+    batch_size = 100
+    total_kernels = 80
+    convmatrix = da.random.random((batch_size, 27, 224 ** 2))
+    kernels = da.random.random((total_kernels, 3 ** 2 * 3))
+    times = []
+    with LocalCluster(
+            n_workers=1,
+            # n_workers=int(0.9 * mp.cpu_count()),
+            processes=True,
+            threads_per_worker=1,
+            # memory_limit='2GB',
+            ip='tcp://localhost:9895',
+    ) as cluster, Client(cluster) as client:
+        for n in range(10):
+            # Do something using 'client'
+            start = time.time()
+            results = []
+            for i in range(batch_size):
+                for j in range(total_kernels):
+                    results.append(
+                        client.submit(
+                            da.matmul, kernels[j, :], convmatrix[i, :, :]
+                        )
+                    )
+            wait(results)
+            # times.append(time.time() - start)
+            data = client.gather(results)
+            times.append(time.time() - start)
 
-    # client.close()
-    # # # wait(y)
-    # # stop = time.time()
-    # execution_time = stop-start
-    # print(execution_time)
+        print('Computation complete! Stopping workers...')
+
+    end = sum(times) / 10
+    print(f'Execution completed in {end} seconds')
