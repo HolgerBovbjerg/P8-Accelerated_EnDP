@@ -7,8 +7,9 @@ import os
 
 import time
 import numpy as np
-from dask.distributed import Client, LocalCluster, wait
+from dask.distributed import Client, LocalCluster, wait, config
 import dask.array as da
+import dask
 
 import validation_functions as va
 
@@ -45,6 +46,7 @@ if __name__ == '__main__':
     input_channels = 256
     total_kernels = 512
     total_samples = 1500
+    # dask.config.set({"distributed.comm.timeouts.tcp": "50s"})
 
     convmatrix = da.random.random((batch_size, 3 ** 2 * input_channels, input_size ** 2))
     kernels = da.random.random((total_kernels, 3 ** 2 * input_channels))
@@ -71,31 +73,24 @@ if __name__ == '__main__':
                 end_means = []
                 for j in range(total_kernels):
                     convolved_covariances.append(
-                        client.submit(
-                            cov_mult, convmatrix[i, :, :], cov[j, :, :]
-                        )
+                        cov_mult(convmatrix[i, :, :], cov[j, :, :])
                     )
+
                     convolved_means.append(
-                        client.submit(
-                            da.matmul, kernels[j, :], convmatrix[i, :, :]
-                        )
+                        da.matmul(kernels[j, :], convmatrix[i, :, :])
                     )
                 for (mean, covariance) in zip(convolved_means, convolved_covariances):
                     pre_relu_samples.append(
                         # We could use client.map when we have futures in a list.
-                        client.submit(
-                            mvn_random_DASK, mean, covariance, total_samples, input_size ** 2
-                        )
+                        mvn_random_DASK(mean, covariance, total_samples, input_size ** 2)
                     )
                 for samples in pre_relu_samples:
                     post_relu_samples.append(
-                        client.submit(
-                            relu, samples
-                        )
+                        relu(samples)
                     )
                 for samples in post_relu_samples:
                     end_means.append(
-                        samples.result().mean(axis=1)
+                        samples.mean(axis=1)
                     )
 
                 out_image_list.append(
