@@ -4,7 +4,7 @@ save_data_on_exit = True
 save_history = True
 save_non_project_files = False
 project_type = empty-project-type
-recent_files = ['convolution_script.py', 'test_script_10.py', 'DASK_network.py', 'DASK_function_file.py', 'dask_test.py', 'function_file.py', 'VGG16_network.py', 'convolution_plus_relu_np_script.py']
+recent_files = ['Tests\\DASK_single_mean_single_covariance.py', 'Tests\\validation_functions.py']
 
 [main]
 version = 0.2.0
