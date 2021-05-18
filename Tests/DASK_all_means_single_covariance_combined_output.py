@@ -41,12 +41,11 @@ def mvn_random_DASK(mean, cov, N, dim):
 
 if __name__ == '__main__':
     da.random.seed(12)
-    batch_size = 1
+    batch_size = 5
     input_size = 28
     input_channels = 256
     total_kernels = 512
     total_samples = 1500
-    # dask.config.set({"distributed.comm.timeouts.tcp": "50s"})
 
     convmatrix = da.random.random((batch_size, 3 ** 2 * input_channels, input_size ** 2))
     kernels = da.random.random((total_kernels, 3 ** 2 * input_channels))
@@ -61,53 +60,55 @@ if __name__ == '__main__':
 
     times = []
     # address='localhost:8001'
-    with Client() as client:
-        for n in range(1):
+    with Client(address='localhost:8001') as client:
+        for n in range(5):
             # Do something using 'client'
             start = time.time()
             out_image_list = []
+            convolved_means = {}
+            convolved_covariances = {}
+            pre_relu_samples = {}
+            post_relu_samples = {}
+            end_means = {}
             for i in range(batch_size):
-                convolved_means = []
-                convolved_covariances = []
-                pre_relu_samples = []
-                post_relu_samples = []
-                end_means = []
-                convolved_means = da.matmul(kernels, convmatrix[i, :, :])
-                
+                convolved_covariances[f'{i}'] = []
+                pre_relu_samples[f'{i}'] = []
+                post_relu_samples[f'{i}'] = []
+                end_means[f'{i}'] = []
+
+                convolved_means[f'{i}'] = da.matmul(kernels, convmatrix[i, :, :])
+
                 for j in range(total_kernels):
-                    convolved_covariances.append(
+                    convolved_covariances[f'{i}'].append(
                         cov_mult(convmatrix[i, :, :], cov[j, :, :])
                     )
 
-
-                for i in range(total_kernels):
-                    pre_relu_samples.append(
-                        # We could use client.map when we have futures in a list.
-                        mvn_random_DASK(convolved_means[i,:], convolved_covariances[i], total_samples, input_size ** 2)
+                for k in range(total_kernels):
+                    pre_relu_samples[f'{i}'].append(
+                        mvn_random_DASK(convolved_means[f'{i}'][k, :], convolved_covariances[f'{i}'][k], total_samples, input_size ** 2)
                     )
-                for samples in pre_relu_samples:
-                    post_relu_samples.append(
+                for samples in pre_relu_samples[f'{i}']:
+                    post_relu_samples[f'{i}'].append(
                         relu(samples)
                     )
-                for samples in post_relu_samples:
-                    end_means.append(
+                for samples in post_relu_samples[f'{i}']:
+                    end_means[f'{i}'].append(
                         samples.mean(axis=1)
                     )
-
                 out_image_list.append(
-                    end_means
+                    end_means[f'{i}']
                 )
 
+            out_combined = da.stack(out_image_list, axis=0)
             print('submits complete')
-            out_combined = da.stack(out_image_list[0], axis = 1)
-            wait(out_combined)
-            results = [result.compute() for result_list in out_combined for result in result_list]
+            results = out_combined.compute()
             times.append(time.time() - start)
+            client.restart()
             if validate:
                 print(
                     f'The results are within 0.02 of eachother? {np.allclose(numpy_validation_list, results, atol=0.02)}')
 
         print('Computation complete! Stopping workers...')
 
-        end = sum(times) / 1
+        end = sum(times) / 5
         print(f'Execution completed in {end} seconds')
