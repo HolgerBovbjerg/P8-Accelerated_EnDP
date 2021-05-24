@@ -1,2 +1,6 @@
 
 *.ini
+*.pyc
+*.lock
+*.dirlock
+*.bak
