@@ -30,6 +30,10 @@ def relu(input_samples):
     # da.maximum(input_samples, 0, out= input_samples)  # This might be faster as it puts result in same variable.
     return da.maximum(input_samples, 0)
 
+def random_cov(dim):
+    A = np.random.standard_normal(size=(dim, dim))
+    cov = np.dot(A, A.transpose())
+    return cov
 
 def random_cov_DASK(dim):
     A = da.random.standard_normal(size=(dim, dim))
@@ -48,7 +52,7 @@ def mvn_random_DASK(mean, cov, N, dim):
 
 if __name__ == '__main__':
     da.random.seed(12)
-    batch_size = 5
+    batch_size = 1
     input_size = 28
     input_channels = 256
     total_kernels = 512
@@ -58,6 +62,15 @@ if __name__ == '__main__':
     kernels_mean = da.random.random((total_kernels, 3 ** 2 * input_channels))
     cov_list = [random_cov_DASK(3 ** 2 * input_channels) for number in range(total_kernels)]
     kernels_cov = da.stack(cov_list)
+    
+    # X = np.random.random((batch_size, 3 ** 2 * input_channels, input_size ** 2))
+    # kernels_mean = np.random.random((total_kernels, 3 ** 2 * input_channels))
+    # cov_list = [random_cov(3 ** 2 * input_channels) for number in range(total_kernels)]
+    # kernels_cov = np.stack(cov_list)
+    
+    # X = da.from_array(X)
+    # kernels_mean = da.from_array(kernels_mean)
+    # kernels_cov = da.from_array(kernels_cov)
 
     # validate =True
     validate = False
@@ -67,11 +80,13 @@ if __name__ == '__main__':
                                                                            input_size)
 
     times = []
+    # localhost:8001
     with Client('localhost:8001') as client:
         for n in range(5):
+            # client.restart() # resets cluster
             # Do something using 'client'
             start = time.time()
-            conv_out = []
+            batch_out = []
             for i in range(batch_size):
                 kernel_out = []         
                 for j in range(total_kernels):
@@ -80,12 +95,13 @@ if __name__ == '__main__':
                                     da.matmul(kernels_cov[j,:,:], X[i,:,:]))
                     z = mvn_random_DASK(mean, cov, total_samples, input_size ** 2)
                     g = relu(z)
-                    kernel_out.append(da.mean(g, axis=1))
-                conv_out.append(da.stack(kernel_out, axis=0))
-            batch_out = da.stack(conv_out, axis=0)  
+                    mean_g = da.mean(g, axis=1)
+                    kernel_out.append(mean_g)
+                kernels_out = da.stack(kernel_out, axis=0)
+                batch_out.append(kernels_out)
+            batches_out = da.stack(batch_out, axis=0)  
             print('task graph complete')
-            # batch_out.visualize()
-            out = batch_out.compute()
+            batches_out_result = batches_out.compute()
             print("compute done")
             times.append(time.time() - start)
             if validate:
