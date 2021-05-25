@@ -30,10 +30,12 @@ def relu(input_samples):
     # da.maximum(input_samples, 0, out= input_samples)  # This might be faster as it puts result in same variable.
     return da.maximum(input_samples, 0)
 
+
 def random_cov(dim):
     A = np.random.standard_normal(size=(dim, dim))
     cov = np.dot(A, A.transpose())
     return cov
+
 
 def random_cov_DASK(dim):
     A = da.random.standard_normal(size=(dim, dim))
@@ -62,12 +64,12 @@ if __name__ == '__main__':
     kernels_mean = da.random.random((total_kernels, 3 ** 2 * input_channels))
     cov_list = [random_cov_DASK(3 ** 2 * input_channels) for number in range(total_kernels)]
     kernels_cov = da.stack(cov_list)
-    
+
     # X = np.random.random((batch_size, 3 ** 2 * input_channels, input_size ** 2))
     # kernels_mean = np.random.random((total_kernels, 3 ** 2 * input_channels))
     # cov_list = [random_cov(3 ** 2 * input_channels) for number in range(total_kernels)]
     # kernels_cov = np.stack(cov_list)
-    
+
     # X = da.from_array(X)
     # kernels_mean = da.from_array(kernels_mean)
     # kernels_cov = da.from_array(kernels_cov)
@@ -76,7 +78,8 @@ if __name__ == '__main__':
     validate = False
     if validate:
         numpy_validation_list = va.single_mean_single_covariance_validator(X.compute(), kernels_mean.compute(),
-                                                                           kernels_cov.compute(), batch_size, total_kernels,
+                                                                           kernels_cov.compute(), batch_size,
+                                                                           total_kernels,
                                                                            input_size)
 
     times = []
@@ -88,18 +91,18 @@ if __name__ == '__main__':
             start = time.time()
             batch_out = []
             for i in range(batch_size):
-                kernel_out = []         
+                kernel_out = []
                 for j in range(total_kernels):
-                    mean = da.matmul(kernels_mean[j,:], X[i,:,:])
-                    cov = da.matmul(da.transpose(X[i,:,:]),
-                                    da.matmul(kernels_cov[j,:,:], X[i,:,:]))
+                    mean = da.matmul(kernels_mean[j, :], X[i, :, :])
+                    cov = da.matmul(da.transpose(X[i, :, :]),
+                                    da.matmul(kernels_cov[j, :, :], X[i, :, :]))
                     z = mvn_random_DASK(mean, cov, total_samples, input_size ** 2)
                     g = relu(z)
                     mean_g = da.mean(g, axis=1)
                     kernel_out.append(mean_g)
                 kernels_out = da.stack(kernel_out, axis=0)
                 batch_out.append(kernels_out)
-            batches_out = da.stack(batch_out, axis=0)  
+            batches_out = da.stack(batch_out, axis=0)
             print('task graph complete')
             batches_out_result = batches_out.compute()
             print("compute done")

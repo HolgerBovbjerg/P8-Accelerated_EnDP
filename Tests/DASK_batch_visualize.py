@@ -3,6 +3,9 @@
 Created on Tue May 18 21:40:34 2021
 
 @author: holge
+
+This file is identical to DASK_batch.py except that it creates the input dask-arrays from numpy-arrays
+so the random sampling does not show in the task graph when visualizing.
 """
 
 

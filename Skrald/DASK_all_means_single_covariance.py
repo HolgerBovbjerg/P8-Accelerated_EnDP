@@ -46,7 +46,6 @@ if __name__ == '__main__':
     input_channels = 256
     total_kernels = 512
     total_samples = 1500
-    # dask.config.set({"distributed.comm.timeouts.tcp": "50s"})
 
     convmatrix = da.random.random((batch_size, 3 ** 2 * input_channels, input_size ** 2))
     kernels = da.random.random((total_kernels, 3 ** 2 * input_channels))
@@ -73,18 +72,17 @@ if __name__ == '__main__':
                 post_relu_samples = []
                 end_means = []
                 convolved_means = da.matmul(kernels, convmatrix[i, :, :])
-                
+
                 for j in range(total_kernels):
                     convolved_covariances.append(
                         cov_mult(convmatrix[i, :, :], cov[j, :, :])
                     )
 
-
                 for i in range(total_kernels):
                     pre_relu_samples.append(
-                        # We could use client.map when we have futures in a list.
-                        mvn_random_DASK(convolved_means[i,:], convolved_covariances[i], total_samples, input_size ** 2)
+                        mvn_random_DASK(convolved_means[i, :], convolved_covariances[i], total_samples, input_size ** 2)
                     )
+
                 for samples in pre_relu_samples:
                     post_relu_samples.append(
                         relu(samples)
