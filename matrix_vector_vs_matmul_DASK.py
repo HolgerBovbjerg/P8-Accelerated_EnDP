@@ -58,4 +58,6 @@ if __name__ == '__main__':
     
     sns.color_palette("deep")
     
-    g = sns.relplot(x="n", y='Execution time [s]', hue="Operation", kind="line", data=df)
+    fig = sns.relplot(x="n", y='Execution time [s]', hue="Operation", kind="line", data=df)
+    fig.savefig("DASK_matmul_test.pdf", bbox_inches='tight')
+    

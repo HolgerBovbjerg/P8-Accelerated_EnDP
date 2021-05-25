@@ -4754,3 +4754,4 @@ Resized_images/Tests/4997.png
 Resized_images/Tests/4998.png
 Resized_images/Tests/4999.png
 Resized_images/Tests/5000.png
+Tests/dask_matmat_vs_matvector/matmat_matmvector_test.spydata
