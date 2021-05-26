@@ -85,7 +85,8 @@ if __name__ == '__main__':
 
                 for k in range(total_kernels):
                     pre_relu_samples[f'{i}'].append(
-                        mvn_random_DASK(convolved_means[f'{i}'][k, :], convolved_covariances[f'{i}'][k], total_samples, input_size ** 2)
+                        mvn_random_DASK(convolved_means[f'{i}'][k, :], convolved_covariances[f'{i}'][k], total_samples,
+                                        input_size ** 2)
                     )
                 for samples in pre_relu_samples[f'{i}']:
                     post_relu_samples[f'{i}'].append(

@@ -3,6 +3,9 @@
 Created on Tue May 18 21:40:34 2021
 
 @author: holge
+
+This script creates a task graph for a single kernel and computes it before creating the
+task graph for the next kernel. All the computed results are then stacked.
 """
 
 import os
@@ -36,11 +39,6 @@ def random_cov(dim):
     cov = np.dot(A, A.transpose())
     return cov
 
-def random_cov_DASK(dim):
-    A = da.random.standard_normal(size=(dim, dim))
-    cov = da.dot(A, A.transpose())
-    return cov
-
 
 def mvn_random_DASK(mean, cov, N, dim):
     da.random.seed(10)
@@ -49,6 +47,12 @@ def mvn_random_DASK(mean, cov, N, dim):
     z = da.random.standard_normal(size=(N, dim))
     x = da.outer(da.ones((N,)), mean).transpose() + da.dot(A, z.transpose())
     return x
+
+
+def random_cov_DASK(dim):
+    A = da.random.standard_normal(size=(dim, dim))
+    cov = da.dot(A, A.transpose())
+    return cov
 
 
 if __name__ == '__main__':
@@ -64,47 +68,36 @@ if __name__ == '__main__':
     cov_list = [random_cov_DASK(3 ** 2 * input_channels) for number in range(total_kernels)]
     kernels_cov = da.stack(cov_list)
 
-
-    # X = np.random.random((batch_size, 3 ** 2 * input_channels, input_size ** 2))
-    # kernels_mean = np.random.random((total_kernels, 3 ** 2 * input_channels))
-    # cov_list = [random_cov(3 ** 2 * input_channels) for number in range(total_kernels)]
-    # kernels_cov = np.stack(cov_list)
-    
-    # X = da.from_array(X)
-    # kernels_mean = da.from_array(kernels_mean)
-    # kernels_cov = da.from_array(kernels_cov)
-
-
-    # validate =True
+    # validate = True
     validate = False
     if validate:
         numpy_validation_list = va.single_mean_single_covariance_validator(X.compute(), kernels_mean.compute(),
-                                                                           kernels_cov.compute(), batch_size, total_kernels,
+                                                                           kernels_cov.compute(), batch_size,
+                                                                           total_kernels,
                                                                            input_size)
 
     times = []
     with Client() as client:
         for n in range(5):
-            client.restart() # resets cluster
+            client.restart()  # resets cluster
             # Do something using 'client'
             start = time.time()
             batches = []
             for i in range(batch_size):
-                kernel_out = []    
+                kernel_out = []
                 for j in range(total_kernels):
-                    mean = da.matmul(kernels_mean[j,:], X[i,:,:])
-                    cov = da.matmul(da.transpose(X[i,:,:]),
-                                    da.matmul(kernels_cov[j,:,:], X[i,:,:]))
+                    mean = da.matmul(kernels_mean[j, :], X[i, :, :])
+                    cov = da.matmul(da.transpose(X[i, :, :]),
+                                    da.matmul(kernels_cov[j, :, :], X[i, :, :]))
                     z = mvn_random_DASK(mean, cov, total_samples, input_size ** 2)
                     g = relu(z)
                     mean_g = da.mean(g, axis=1)
-                    # print('task graph complete')
                     kernel_out.append(mean_g.compute())
                 kernels_out = np.stack(kernel_out, axis=0)
                 batches.append(kernels_out)
-            batches_out_result = np.stack(batches, axis=0)  
+            batches_out_result = np.stack(batches, axis=0)
             print("compute done")
-            
+
             times.append(time.time() - start)
             if validate:
                 print(
@@ -114,3 +107,4 @@ if __name__ == '__main__':
 
         end = sum(times) / 5
         print(f'Execution completed in {end} seconds')
+

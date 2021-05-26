@@ -7,10 +7,7 @@ if slow:
 
 import time
 from dask.distributed import Client, LocalCluster, wait
-import multiprocessing as mp
 import dask.array as da
-
-import function_file as ff
 
 if __name__ == '__main__':
     batch_size = 100
@@ -38,7 +35,6 @@ if __name__ == '__main__':
                         )
                     )
             wait(results)
-            # times.append(time.time() - start)
             data = client.gather(results)
             times.append(time.time() - start)
 

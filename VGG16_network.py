@@ -6,14 +6,11 @@ Created on Mon May  3 13:35:51 2021
 """
 
 import numpy as np
-import os
 import matplotlib.pyplot as plt
 import time
 import torch
 
 import function_file as ff
-import Matrix_Vector_mult as mv
-
 
 if __name__ == "__main__":
     #%% Import images

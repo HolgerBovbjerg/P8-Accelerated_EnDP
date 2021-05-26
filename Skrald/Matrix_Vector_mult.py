@@ -23,46 +23,6 @@ def Naive_Mult(A, B):
         return print('Dimensions must match')
 
 
-# DO NOT RUN, it takes forever.
-def DASK_block_mult(matrixs, vectors, workers, input_size, kernel_size, input_channels, batch_size, output_channels):
-    client = Client(n_workers=workers)
-    blocks = input_channels
-    results = []
-
-    for k in range(batch_size):
-        matrix = matrixs[k].transpose()
-        for p in range(output_channels):
-            print('ping')
-            vector = vectors[p]
-            for i in range(input_size):
-                for j in range(blocks):
-                    toep = client.scatter(matrix[input_size * i:input_size * (i + 1),
-                                          kernel_size ** 2 * j:kernel_size ** 2 * (j + 1)]
-                                          )
-                    vec_slice = client.scatter(vector[kernel_size ** 2 * j:kernel_size ** 2 * (j + 1)])
-                    results.append(
-                        client.submit(np.matmul, toep, vec_slice)
-                    )
-
-    out_batches = np.zeros((batch_size, output_channels, input_size, input_size))
-    client.gather(results)
-    for k in range(batch_size):
-        out_channels = np.zeros((output_channels, input_size, input_size))
-        for p in range(output_channels):
-            out = np.zeros((32, 32))
-            for i in range(input_size):
-                out_vector_slice = np.zeros(input_size)
-                for j in range(blocks):
-                    print(f'index = {((j + i * blocks) + p * blocks * input_size) + k * batch_size}')
-                    out_vector_slice = out_vector_slice + results[i * blocks + j].result()
-                out[i, :] = out_vector_slice
-            out_channels[p, :, :] = out[:, :]
-        out_batches[k, :, :, :] = out_channels[:, :, :]
-
-    wait(out_batches)
-    client.close()
-    return out_batches
-
 
 def DASK_batch_mult(matrix_input, vector_input, workers, batch_size, input_size, output_channels):
     client = Client(n_workers=workers)

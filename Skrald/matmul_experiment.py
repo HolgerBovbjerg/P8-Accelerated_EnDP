@@ -72,8 +72,6 @@ def gotoMatmulGEBP(Ablock, Bpanel):
     colsA = Ablock.shape[1]
     rowsB = Bpanel.shape[0]
     colsB = Bpanel.shape[1]
-    for i in range 
-        
 
 
 

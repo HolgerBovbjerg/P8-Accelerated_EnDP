@@ -33,49 +33,50 @@ if __name__ == '__main__':
 
 
     #%% Dot test
-    with threadpool_limits(limits=1, user_api='blas'):
-        x = 10000
-        y = 10000
-        itr = 1
-        A = np.random.random((x,y))
-        B = np.random.random((y,1))
-        
-        start = time.time()
-        for i in range(itr):
-            C = np.dot(A,B)    
-        execution_time_np_dot = (time.time() - start)/itr
-        
-        Adask = da.from_array(A, chunks = 'auto')
-        Bdask = da.from_array(B, chunks = 'auto')
-        start = time.time()
-        for i in range(itr):    
-            C = da.dot(Adask,Bdask)    
-            result = C.compute()
-        execution_time_dask_dot = (time.time() - start)/itr
+    # with threadpool_limits(limits=1, user_api='blas'):
+    x = 10000
+    y = 10000
+    itr = 1
+    A = np.random.random((x,y))
+    B = np.random.random((y,1))
+    
+    start = time.time()
+    for i in range(itr):
+        C = np.dot(A,B)    
+    execution_time_np_dot = (time.time() - start)/itr
+    
+    Adask = da.from_array(A, chunks = 'auto')
+    Bdask = da.from_array(B, chunks = 'auto')
+    start = time.time()
+    for i in range(itr):    
+        C = da.dot(Adask,Bdask)    
+        result = C.compute()
+    execution_time_dask_dot = (time.time() - start)/itr
+    
     #%% Matmul test
-    with threadpool_limits(limits=1, user_api='blas'):
+    # with threadpool_limits(limits=1, user_api='blas'):
         
-        x = 10000
-        y = 10000
-        z = 10000
-        
-        itr = 1
-        
-        A = np.random.random((x,y))
-        B = np.random.random((y,z))
-        
-        start = time.time()
-        for i in range(itr):
-            C = np.matmul(A,B)    
-        execution_time_np_matmul = (time.time() - start)/itr
-         
-        Adask = da.from_array(A, chunks = 'auto')
-        Bdask = da.from_array(B, chunks = 'auto')
-        start = time.time()
-        for i in range(itr): 
-            C = da.matmul(Adask,Bdask) 
-            result = C.compute()
-        execution_time_dask_matmul = (time.time() - start)/itr
+    x = 10000
+    y = 10000
+    z = 10000
+    
+    itr = 1
+    
+    A = np.random.random((x,y))
+    B = np.random.random((y,z))
+    
+    start = time.time()
+    for i in range(itr):
+        C = np.matmul(A,B)    
+    execution_time_np_matmul = (time.time() - start)/itr
+     
+    Adask = da.from_array(A, chunks = 'auto')
+    Bdask = da.from_array(B, chunks = 'auto')
+    start = time.time()
+    for i in range(itr): 
+        C = da.matmul(Adask,Bdask) 
+        result = C.compute()
+    execution_time_dask_matmul = (time.time() - start)/itr
         
     #%% Cholesky test
     # with threadpool_limits(limits=1, user_api='blas'):

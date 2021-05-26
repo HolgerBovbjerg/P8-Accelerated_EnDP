@@ -3,6 +3,8 @@
 Created on Tue May 18 21:40:34 2021
 
 @author: holge
+
+This script creates a singe task graph for with all the kernels and computes at the end.
 """
 
 import os
@@ -59,27 +61,18 @@ if __name__ == '__main__':
     input_channels = 6
     total_kernels = 20
     total_samples = 1500
-    
+
     X = da.random.random((batch_size, 3 ** 2 * input_channels, input_size ** 2))
     kernels_mean = da.random.random((total_kernels, 3 ** 2 * input_channels))
     cov_list = [random_cov_DASK(3 ** 2 * input_channels) for number in range(total_kernels)]
     kernels_cov = da.stack(cov_list)
-    
-    # X = np.random.random((batch_size, 3 ** 2 * input_channels, input_size ** 2))
-    # kernels_mean = np.random.random((total_kernels, 3 ** 2 * input_channels))
-    # cov_list = [random_cov(3 ** 2 * input_channels) for number in range(total_kernels)]
-    # kernels_cov = np.stack(cov_list)
-    
-    # X = da.from_array(X)
-    # kernels_mean = da.from_array(kernels_mean)
-    # kernels_cov = da.from_array(kernels_cov)
 
-
-    # validate =True
+    # validate = True
     validate = False
     if validate:
         numpy_validation_list = va.single_mean_single_covariance_validator(X.compute(), kernels_mean.compute(),
-                                                                           kernels_cov.compute(), batch_size, total_kernels,
+                                                                           kernels_cov.compute(), batch_size,
+                                                                           total_kernels,
                                                                            input_size)
 
     times = []
@@ -90,11 +83,11 @@ if __name__ == '__main__':
             start = time.time()
             batches = []
             for i in range(batch_size):
-                kernel_out = []    
+                kernel_out = []
                 for j in range(total_kernels):
-                    mean = da.matmul(kernels_mean[j,:], X[i,:,:])
-                    cov = da.matmul(da.transpose(X[i,:,:]),
-                                    da.matmul(kernels_cov[j,:,:], X[i,:,:]))
+                    mean = da.matmul(kernels_mean[j, :], X[i, :, :])
+                    cov = da.matmul(da.transpose(X[i, :, :]),
+                                    da.matmul(kernels_cov[j, :, :], X[i, :, :]))
                     z = mvn_random_DASK(mean, cov, total_samples, input_size ** 2)
                     g = relu(z)
                     mean_g = da.mean(g, axis=1)
@@ -102,7 +95,7 @@ if __name__ == '__main__':
                 kernels_out = da.stack(kernel_out, axis=0)
                 batches.append(kernels_out.compute())
                 print('task graph complete')
-            batches_out_result = np.stack(batches, axis=0)  
+            batches_out_result = np.stack(batches, axis=0)
 
             print("compute done")
             times.append(time.time() - start)

@@ -2,10 +2,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import os
-from torchvision import datasets, transforms
 
 # import helper
-import Matrix_Vector_mult as mv
+from Skrald import Matrix_Vector_mult as mv
 import function_file as ff
 
 if __name__ == "__main__":
