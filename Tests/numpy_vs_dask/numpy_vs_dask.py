@@ -5,7 +5,7 @@ Created on Sun May 16 11:24:26 2021
 @author: holge
 
 Test script which tests the performance of numpy versus dask
-The following operationms are tested:
+The following operations are tested:
     dot product
     matrix multiplication
     cholesky decomposition
@@ -26,87 +26,86 @@ from dask.distributed import Client, LocalCluster
 
     #%% start local dask cluster
 if __name__ == '__main__':
-    cluster = LocalCluster(n_workers = 4, threads_per_worker = 3)
+    cluster = LocalCluster(n_workers = 6, threads_per_worker = 2)
     # cluster = 'localhost:8001'
     client = Client(cluster)
     # client = Client()
 
 
     #%% Dot test
-    # with threadpool_limits(limits=1, user_api='blas'):
-    x = 10000
-    y = 10000
-    itr = 1
-    A = np.random.random((x,y))
-    B = np.random.random((y,1))
-    
-    start = time.time()
-    for i in range(itr):
-        C = np.dot(A,B)    
-    execution_time_np_dot = (time.time() - start)/itr
-    
-    Adask = da.from_array(A, chunks = 'auto')
-    Bdask = da.from_array(B, chunks = 'auto')
-    start = time.time()
-    for i in range(itr):    
-        C = da.dot(Adask,Bdask)    
-        result = C.compute()
-    execution_time_dask_dot = (time.time() - start)/itr
+    with threadpool_limits(limits=1, user_api='blas'):
+        x = 10000
+        y = 10000
+        itr = 1
+        A = np.random.random((x,y))
+        B = np.random.random((y,1))
+        
+        start = time.time()
+        for i in range(itr):
+            C = np.dot(A,B)    
+        execution_time_np_dot = (time.time() - start)/itr
+        
+        Adask = da.from_array(A, chunks = 'auto')
+        Bdask = da.from_array(B, chunks = 'auto')
+        start = time.time()
+        for i in range(itr):    
+            C = da.dot(Adask,Bdask)    
+            result = C.compute()
+        execution_time_dask_dot = (time.time() - start)/itr
     
     #%% Matmul test
-    # with threadpool_limits(limits=1, user_api='blas'):
+    with threadpool_limits(limits=1, user_api='blas'):
+        x = 10000
+        y = 10000
+        z = 10000
         
-    x = 10000
-    y = 10000
-    z = 10000
+        itr = 1
+        
+        A = np.random.random((x,y))
+        B = np.random.random((y,z))
+        
+        start = time.time()
+        for i in range(itr):
+            C = np.matmul(A,B)    
+        execution_time_np_matmul = (time.time() - start)/itr
+        
+        Adask = da.from_array(A, chunks = 'auto')
+        Bdask = da.from_array(B, chunks = 'auto')
+        start = time.time()
+        for i in range(itr): 
+            C = da.matmul(Adask,Bdask) 
+            result = C.compute()
+        execution_time_dask_matmul = (time.time() - start)/itr
+        
+    %% Cholesky test
+    with threadpool_limits(limits=1, user_api='blas'):
+        x = 10000
+        
+        itr = 1
+        
+        A = np.random.random((x,x))
+        A = np.matmul(A,A.transpose())
+        start = time.time()
+        for i in range(itr):
+            B = np.linalg.cholesky(A)    
+        execution_time_np_cholesky = (time.time() - start)/itr
+        
+        Adask = da.from_array(A, chunks = 'auto')
+        start = time.time()
+        for i in range(itr):
+            B = da.linalg.cholesky(Adask)    
+            result  = B.compute()
+        execution_time_dask_cholesky = (time.time() - start)/itr
     
-    itr = 1
-    
-    A = np.random.random((x,y))
-    B = np.random.random((y,z))
-    
-    start = time.time()
-    for i in range(itr):
-        C = np.matmul(A,B)    
-    execution_time_np_matmul = (time.time() - start)/itr
-     
-    Adask = da.from_array(A, chunks = 'auto')
-    Bdask = da.from_array(B, chunks = 'auto')
-    start = time.time()
-    for i in range(itr): 
-        C = da.matmul(Adask,Bdask) 
-        result = C.compute()
-    execution_time_dask_matmul = (time.time() - start)/itr
-        
-    #%% Cholesky test
-    # with threadpool_limits(limits=1, user_api='blas'):
-    #     x = 10000
-        
-    #     itr = 1
-        
-    #     A = np.random.random((x,x))
-    #     A = np.matmul(A,A.transpose())
-    #     start = time.time()
-    #     for i in range(itr):
-    #         B = np.linalg.cholesky(A)    
-    #     execution_time_np_cholesky = (time.time() - start)/itr
-        
-    #     Adask = da.from_array(A, chunks = 'auto')
-    #     start = time.time()
-    #     for i in range(itr):
-    #         B = da.linalg.cholesky(Adask)    
-    #         result  = B.compute()
-    #     execution_time_dask_cholesky = (time.time() - start)/itr
-    
-    # client.close()
+    client.close()
     
     #%% plots
     execution_times = [execution_time_np_dot, 
                         execution_time_np_matmul, 
-                        #execution_time_np_cholesky,
+                        execution_time_np_cholesky,
                         execution_time_dask_dot,
-                        execution_time_dask_matmul] #,
-                        #execution_time_dask_cholesky]
+                        execution_time_dask_matmul,
+                        execution_time_dask_cholesky]
     
     data_set = {'Operation': ["dot", "matmul", # "cholesky",
                            "dot", "matmul"], # , "cholesky"],
