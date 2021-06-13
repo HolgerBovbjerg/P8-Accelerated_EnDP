@@ -8,5 +8,7 @@ Through an analysis of the EnDP framework, it was found that distributed computi
 A distributed implementation of a convolution layer from the VGG-16 network is used to test how well the framwork distributes to a large network.  
 
 ## Repository structure
-The repository has two main folders ```Function_files``` and ```Tests```.
-The ```Function_files``` folder contains various functions created as part of the project and the ```Tests``` folder contains test scripts used in the project. 
+The repository has three main folders ```Function_files```, ```Tests``` and ```Strato```.
+The ```Function_files``` folder contains various functions created as part of the project. 
+The ```Tests``` folder contains test scripts used in the project. 
+The ```Starto``` folder contains a guide to how the strato cloud is used with DASK and a ping script for testing proper connection to workers. 
