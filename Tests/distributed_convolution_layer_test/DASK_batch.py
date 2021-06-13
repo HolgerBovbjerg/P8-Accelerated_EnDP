@@ -2,6 +2,9 @@
 """
 Created on Tue May 18 21:40:34 2021
 
+This script represents one convolution layer in the VGG-16 network including max pool.
+The indivudal computations are added to a DASK task graph which is computed when a whole batch is scheduled. 
+
 @author: holge
 """
 

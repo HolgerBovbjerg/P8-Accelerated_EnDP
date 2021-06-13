@@ -3,9 +3,9 @@
 Created on Tue May 18 21:40:34 2021
 
 @author: holge
-
-This script creates a task graph for a single kernel and computes it before creating the
-task graph for the next kernel. All the computed results are then stacked.
+This script represents one convolution layer in the VGG-16 network including max pool.
+The script creates a task graph for a single kernel and computes it before creating the
+task graph for the next kernel. All the computed results are then stacked, first kernelwise, then batchwise.
 """
 
 import os

@@ -4,7 +4,9 @@ Created on Tue May 18 21:40:34 2021
 
 @author: holge
 
-This script creates a singe task graph for with all the kernels and computes at the end.
+This script represents one convolution layer in the VGG-16 network including max pool.
+The script creates a task graph for a computation of all kernels and computes it before creating the
+task graph for the next batch. All the computed results are stacked to form the final output.
 """
 
 import os
