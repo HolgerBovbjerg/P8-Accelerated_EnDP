@@ -14,8 +14,8 @@ import function_file as ff
 
 if __name__ == "__main__":
     #%% Import images
-    # dir_path = os.path.dirname(os.path.realpath(__file__))
-    # imagepath = dir_path + "/Resized_images"
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    imagepath = dir_path + "/Resized_images"
     batch_size = 16
     input_size = 224
     convmatrix = np.empty((batch_size, 27, 224**2))
@@ -23,10 +23,9 @@ if __name__ == "__main__":
     start_time = time.time()
     
     for i in range(batch_size):
-        # image = ff.import_image(imagepath, i)
-        image = np.random.random((1, 3, input_size, input_size))
+        image = ff.import_image(imagepath, i)
+        # image = np.random.random((1, 3, input_size, input_size))
         convmatrix[i, :, :] = ff.image2convmatrix(torch.tensor(image), 3, 1)
-    
     
     
     #%% Convolution layer 1
