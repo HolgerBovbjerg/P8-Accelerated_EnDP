@@ -1,15 +1,14 @@
-connect til head node locahost:8000 til 10.92.0.188:8787: ssh -L 8000:localhost:8787 ubuntu@10.92.0.188 -i HSBKeyPair.pem
-start dask scheduler: dask-scheduler
-log på compute nodes og skriv dask-worker cluster 
+connect to head node: 
+	map locahost:8000 to 10.92.0.188:8787 by running ssh -L 8000:localhost:8787 ubuntu@10.92.0.188 -i HSBKeyPair.pem
+	map locahost:8001 to 10.92.0.188:8786 by running ssh -L 8001:localhost:8786 ubuntu@10.92.0.188 -i HSBKeyPair.pem
+start dask scheduler on head-node: 
+	dask-scheduler
+log on compute nodes and run: dask-worker 10.92.0.188:8786 & (& will give the PID such that we kan use "kill" to stop worker)
 	ssh ubuntu@10.92.0.98 -i HSBKeyPair.pem
 	ssh ubuntu@10.92.0.74 -i HSBKeyPair.pem
 	ssh ubuntu@10.92.0.75 -i HSBKeyPair.pem
 	ssh ubuntu@10.92.0.525 -i HSBKeyPair.pem
 	
-gå ind på dask dashboard: i browser - locahost:8000
-
-log på head-node via ssh i ny terminal: ssh ubuntu@10.92.0.525 -i HSBKeyPair.pem 
-kør program: python3 program.py
-
-success!
+Dask dashboard: in browser - locahost:8000
+To use cluster in dask set client = Client("locahost:8001") and run dask program
 
